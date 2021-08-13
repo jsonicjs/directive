@@ -1,8 +1,10 @@
 import { Rule, Plugin } from 'jsonic';
 declare type DirectiveOptions = {
     name: string;
-    src: string;
+    open: string;
     action: (from?: string, rule?: Rule) => any;
+    close?: string;
+    only?: string | string[];
 };
 declare const Directive: Plugin;
 export { Directive, };
