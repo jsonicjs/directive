@@ -4,7 +4,7 @@ declare type DirectiveOptions = {
     open: string;
     action: (from?: string, rule?: Rule) => any;
     close?: string;
-    only?: string | string[];
+    rules?: string | string[];
 };
 declare const Directive: Plugin;
 export { Directive, };

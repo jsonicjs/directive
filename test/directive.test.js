@@ -8,7 +8,7 @@ describe('directive', () => {
         const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
             name: 'happy',
             open: '@',
-            action: (rule, ctx) => {
+            action: (rule) => {
                 var _a;
                 let from = (_a = rule.parent) === null || _a === void 0 ? void 0 : _a.name;
                 if ('val' === from) {
@@ -35,6 +35,53 @@ describe('directive', () => {
         expect(j('{"a":1,@b}')).toEqual({ a: 1, pair$: 'b' });
         expect(j('{"a":1,@[2]}')).toEqual({ a: 1, pair$: [2] });
         expect(j('{"a":[1,@b]}')).toEqual({ a: [1, '<b>'] });
+    });
+    test('close', () => {
+        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+            name: 'foo',
+            open: 'foo<',
+            close: '>',
+            action: (rule) => rule.node = 'FOO',
+            rules: ['val', 'pair', 'elem']
+        });
+        // expect(() => j('>', { xlog: -1 })).toThrow(/foo_close/)
+        expect(j('foo<t>')).toEqual('FOO');
+        expect(j('{"a":1}')).toEqual({ a: 1 });
+        expect(j('{"a":foo< a >}')).toEqual({ a: 'FOO' });
+        expect(j('{"a":foo<{x:1}>}')).toEqual({ a: 'FOO' });
+        expect(j('{"a":foo<foo<a>>}')).toEqual({ a: 'FOO' });
+        expect(j('{"a":1,b:foo<b>}')).toEqual({ a: 1, b: 'FOO' });
+        expect(j('{"a":1,b:foo<[2]>}')).toEqual({ a: 1, b: 'FOO' });
+        expect(j('{"a":[1,foo<b>]}')).toEqual({ a: [1, 'FOO'] });
+        expect(j('a:foo<y:2,>', { xlog: -1 })).toEqual({ a: 'FOO' });
+        expect(() => j('>')).toThrow(/foo_close/);
+        expect(() => j('a:>', { xlog: -1 })).toThrow(/foo_close/);
+        const k = j.use(directive_1.Directive, {
+            name: 'bar',
+            open: 'bar<',
+            close: '>',
+            action: (rule) => rule.node = 'BAR'
+        });
+        expect(k('{"a":1}')).toEqual({ a: 1 });
+        expect(k('{"a":bar< a >}')).toEqual({ a: 'BAR' });
+        expect(k('{"a":bar<{x:1}>}')).toEqual({ a: 'BAR' });
+        expect(k('{"a":bar<bar<a>>}')).toEqual({ a: 'BAR' });
+        expect(k('{"a":1,b:bar<b>}')).toEqual({ a: 1, b: 'BAR' });
+        expect(k('{"a":1,b:bar<[2]>}')).toEqual({ a: 1, b: 'BAR' });
+        expect(k('{"a":[1,bar<b>]}')).toEqual({ a: [1, 'BAR'] });
+        expect(k('{"a":1}')).toEqual({ a: 1 });
+        expect(k('{"a":foo< a >}')).toEqual({ a: 'FOO' });
+        expect(k('{"a":foo<{x:1}>}')).toEqual({ a: 'FOO' });
+        expect(k('{"a":foo<foo<a>>}')).toEqual({ a: 'FOO' });
+        expect(k('{"a":1,b:foo<b>}')).toEqual({ a: 1, b: 'FOO' });
+        expect(k('{"a":1,b:foo<[2]>}')).toEqual({ a: 1, b: 'FOO' });
+        expect(k('{"a":[1,foo<b>]}')).toEqual({ a: [1, 'FOO'] });
+        expect(k('{"a":foo< a >, b:bar<>}')).toEqual({ a: 'FOO', b: 'BAR' });
+        expect(() => j.use(directive_1.Directive, {
+            name: 'bar',
+            open: 'bar<',
+            action: () => null
+        })).toThrow(/bar</);
     });
     test('inject', () => {
         const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
@@ -81,6 +128,49 @@ describe('directive', () => {
         expect(j('190,<2,>,99')).toEqual([190, [2], 99]);
         expect(j('200,<2,3,4,>,99')).toEqual([200, [2, 3, 4], 99]);
         expect(j('210,<,2,3,4>,99')).toEqual([210, [null, 2, 3, 4], 99]);
+    });
+    test('adder', () => {
+        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+            name: 'adder',
+            open: 'add<',
+            close: '>',
+            action: (rule) => {
+                let out = 0;
+                if (Array.isArray(rule.child.node)) {
+                    out = rule.child.node.reduce((a, v) => a + v);
+                }
+                rule.node = out;
+            }
+        });
+        expect(j('add<1,2>')).toEqual(3);
+        expect(j('a:add<1,2>')).toEqual({ a: 3 });
+        expect(j('[add<a,b>]')).toEqual(['ab']);
+        const k = j.use(directive_1.Directive, {
+            name: 'multiplier',
+            open: 'mul<',
+            close: '>',
+            action: (rule) => {
+                let out = 0;
+                if (Array.isArray(rule.child.node)) {
+                    out = rule.child.node.reduce((a, v) => a * v);
+                }
+                rule.node = out;
+            }
+        });
+        expect(k('mul<2,3>')).toEqual(6);
+        expect(k('a:mul<2,3>')).toEqual({ a: 6 });
+        expect(k('[mul<a,1>]')).toEqual([NaN]);
+        expect(j('add<1,2>')).toEqual(3);
+        expect(j('a:add<1,2>')).toEqual({ a: 3 });
+        expect(j('[add<a,b>]')).toEqual(['ab']);
+    });
+    test('edges', () => {
+        jsonic_1.Jsonic.make().use(directive_1.Directive, {
+            name: 'none',
+            open: '@',
+            action: () => null,
+            rules: null,
+        });
     });
 });
 //# sourceMappingURL=directive.test.js.map

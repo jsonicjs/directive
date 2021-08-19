@@ -7,77 +7,81 @@ type DirectiveOptions = {
   open: string
   action: (from?: string, rule?: Rule) => any
   close?: string
-  only?: string | string[]
+  rules?: string | string[]
 }
 
 
 const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
-
-  let only: string[] =
-    'string' == typeof options.only ? options.only.split(/\s*,\s*/) :
-      (options.only || [])
+  let rules: string[] =
+    ('string' == typeof options.rules ? options.rules.split(/\s*,\s*/) :
+      (options.rules || [])).filter(rulename => '' !== rulename)
   let name = options.name
   let open = options.open
   let close = options.close
   let action = options.action
 
-  let tokens: Record<string, string> = {}
+  let token: Record<string, string> = {}
 
   let openTN = '#D_open_' + name
   let closeTN = '#D_close_' + name
 
-  if (null != open) {
-    tokens[openTN] = open
+
+  let OPEN = jsonic.fixed(open)
+  let CLOSE = null == close ? null : jsonic.fixed(close)
+
+  // OPEN must be unique
+  if (null != OPEN) {
+    throw new Error('Directive open token already in use: ' + open)
+  }
+  else {
+    token[openTN] = open
   }
 
-  if (null != close) {
-    tokens[closeTN] = close
+  // Only create CLOSE if not already defined as a fixed token
+  if (null == CLOSE && null != close) {
+    token[closeTN] = close
   }
 
-  jsonic.options({
-    fixed: {
-      token: tokens
-    }
-  })
+  jsonic.options({ fixed: { token } })
 
   let CA = jsonic.token.CA
-  let OPEN = jsonic.token(openTN)
-  let CLOSE = jsonic.token(closeTN)
+  OPEN = jsonic.fixed(open)
+  CLOSE = null == close ? null : jsonic.fixed(close)
 
-  // console.log('T', OPEN, CLOSE)
+  rules.forEach(rulename => {
+    jsonic.rule(rulename, (rs: RuleSpec) => {
+      rs.open({ s: [OPEN], p: name, n: { dr: 1 } })
 
-  only.forEach(rulename => {
-    if (null != rulename && '' !== rulename) {
-      // TODO: .rule could accept a single match, unshifting to open? like lex?
-
-      // console.log('DR', rulename)
-
-      jsonic.rule(rulename, (rs: RuleSpec) => {
-        rs.def.open.unshift(
+      if (null != close) {
+        rs.open([
           {
-            s: [CLOSE], b: 1
+            s: [CLOSE],
+            c: { n: { dr: 0 } },
+            // TODO: make this easier - custom error example
+            e: (r: Rule, ctx: any) => ((ctx.t0 as any).err = name + '_close', ctx.t0)
           },
+
+          // <2,> case
           {
-            s: [OPEN], p: 'directive'
-          })
+            s: [CLOSE], b: 1,
+          },
+        ])
 
-        if (null != close) {
-          rs.def.close.unshift({
-            s: [CLOSE], b: 1
-          })
-        }
+        rs.close({ s: [CLOSE], b: 1 })
+      }
 
-        return rs
-      })
-    }
+      return rs
+    })
   })
 
-  jsonic.rule('directive', () => {
+  jsonic.rule(name, () => {
     return new RuleSpec({
       bo: () => {
         return { node: {} }
       },
-      open: [{ p: 'val', n: { pk: -1, il: 0 } }],
+      open: [
+        { p: 'val', n: { pk: -1, il: 0 } },
+      ],
       close: null != close ? [
         { s: [CLOSE] },
         { s: [CA, CLOSE] },
@@ -89,7 +93,7 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
 
 
 Directive.defaults = ({
-  only: 'val,pair,elem'
+  rules: 'val,pair,elem'
 } as DirectiveOptions)
 
 
