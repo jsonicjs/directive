@@ -44,7 +44,6 @@ describe('directive', () => {
             action: (rule) => rule.node = 'FOO',
             rules: ['val', 'pair', 'elem']
         });
-        // expect(() => j('>', { xlog: -1 })).toThrow(/foo_close/)
         expect(j('foo<t>')).toEqual('FOO');
         expect(j('{"a":1}')).toEqual({ a: 1 });
         expect(j('{"a":foo< a >}')).toEqual({ a: 'FOO' });

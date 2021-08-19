@@ -25,7 +25,25 @@ const Directive = (jsonic, options) => {
     if (null == CLOSE && null != close) {
         token[closeTN] = close;
     }
-    jsonic.options({ fixed: { token } });
+    jsonic.options({
+        fixed: {
+            token
+        },
+        error: {
+            [name + '_close']: null == close ? null :
+                'directive ' + name + ' close "' + close + '" without open "' + open + '"'
+        },
+        hint: {
+            [name + '_close']: null == close ? null :
+                // 'directive '' close `' + close + '` without open `' + open + '`'
+                `
+The ${name} directive must start with the characters "${open}" and end
+with the characters "${close}". The end characters "${close}" may not
+appear without the start characters "${open}" appearing first:
+"${open}...${close}".
+`
+        },
+    });
     let CA = jsonic.token.CA;
     OPEN = jsonic.fixed(open);
     CLOSE = null == close ? null : jsonic.fixed(close);
@@ -37,8 +55,7 @@ const Directive = (jsonic, options) => {
                     {
                         s: [CLOSE],
                         c: { n: { dr: 0 } },
-                        // TODO: make this easier - custom error example
-                        e: (r, ctx) => (ctx.t0.err = name + '_close', ctx.t0)
+                        e: (_r, ctx) => ctx.t0.bad(name + '_close')
                     },
                     // <2,> case
                     {

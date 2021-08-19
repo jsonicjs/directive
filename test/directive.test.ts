@@ -56,10 +56,6 @@ describe('directive', () => {
       rules: ['val', 'pair', 'elem']
     })
 
-    // expect(() => j('>', { xlog: -1 })).toThrow(/foo_close/)
-
-
-
     expect(j('foo<t>')).toEqual('FOO')
 
     expect(j('{"a":1}')).toEqual({ a: 1 })
