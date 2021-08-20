@@ -35,7 +35,6 @@ const Directive = (jsonic, options) => {
         },
         hint: {
             [name + '_close']: null == close ? null :
-                // 'directive '' close `' + close + '` without open `' + open + '`'
                 `
 The ${name} directive must start with the characters "${open}" and end
 with the characters "${close}". The end characters "${close}" may not
@@ -47,6 +46,8 @@ appear without the start characters "${open}" appearing first:
     let CA = jsonic.token.CA;
     OPEN = jsonic.fixed(open);
     CLOSE = null == close ? null : jsonic.fixed(close);
+    // NOTE: RuleSpec.open|close refers to Rule state, whereas
+    // OPEN|CLOSE refers to opening and closing tokens for the directive.
     rules.forEach(rulename => {
         jsonic.rule(rulename, (rs) => {
             rs.open({ s: [OPEN], p: name, n: { dr: 1 } });
