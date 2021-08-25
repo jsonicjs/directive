@@ -1,8 +1,8 @@
-import { Rule, Plugin } from 'jsonic';
+import { AltAction, Plugin } from 'jsonic';
 declare type DirectiveOptions = {
     name: string;
     open: string;
-    action: (from?: string, rule?: Rule) => any;
+    action: AltAction;
     close?: string;
     rules?: string | string[];
 };

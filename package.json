@@ -1,11 +1,11 @@
 {
   "name": "@jsonic/directive",
   "version": "0.0.1",
+  "description": "This plugin allows the [Jsonic](https://jsonic.senecajs.org) JSON parser to support directive syntax.",
   "main": "directive.js",
   "type": "commonjs",
   "browser": "directive.min.js",
   "types": "directive.d.ts",
-  "description": "DIRECTIVE",
   "homepage": "https://github.com/jsonicjs/directive",
   "keywords": [
     "pattern",
@@ -40,13 +40,9 @@
     "LICENSE"
   ],
   "devDependencies": {
-    "@hapi/code": "^8.0.3",
-    "@hapi/lab": "^24.3.2",
     "@types/jest": "^26.0.24",
     "browserify": "^17.0.0",
-    "hapi-lab-shim": "0.0.2",
     "jest": "^27.0.6",
-    "lab-transform-typescript": "^3.0.1",
     "prettier": "^2.3.2",
     "tinyify": "^3.0.0",
     "ts-jest": "^27.0.4",

@@ -30,6 +30,7 @@ describe('directive', () => {
         expect(j('@t')).toEqual('val:"T"');
         expect(j('{"a":1}')).toEqual({ a: 1 });
         expect(j('{"a":@ a}')).toEqual({ a: 'val:"A"' });
+        expect(j('{"a":@a,b:2}')).toEqual({ a: 'val:"A"', b: 2 });
         expect(j('{"a":@{x:1}}')).toEqual({ a: 'val:{"X":1}' });
         expect(j('{"a":@@a}')).toEqual({ a: 'val:"VAL:\\"A\\""' });
         expect(j('{"a":1,@b}')).toEqual({ a: 1, pair$: 'b' });

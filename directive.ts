@@ -1,11 +1,11 @@
 
-import { Jsonic, RuleSpec, Rule, Plugin } from 'jsonic'
+import { Jsonic, RuleSpec, Rule, AltAction, Plugin } from 'jsonic'
 
 
 type DirectiveOptions = {
   name: string
   open: string
-  action: (from?: string, rule?: Rule) => any
+  action: AltAction
   close?: string
   rules?: string | string[]
 }
@@ -100,13 +100,19 @@ appear without the start characters "${open}" appearing first:
         return { node: {} }
       },
       open: [
-        { p: 'val', n: { pk: -1, il: 0 } },
+        {
+          p: 'val',
+
+          // Only accept implicits when there is a CLOSE token,
+          // otherwise we'll eat all following siblings.
+          n: null == close ? {} : { pk: -1, il: 0 }
+        },
       ],
       close: null != close ? [
         { s: [CLOSE] },
         { s: [CA, CLOSE] },
       ] : null,
-      bc: (...all: any[]) => action(...all)
+      bc: (...all: any[]) => (action as any)(...all)
     })
   })
 }
