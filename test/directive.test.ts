@@ -216,12 +216,25 @@ describe('directive', () => {
 
 
   test('edges', () => {
-    Jsonic.make().use(Directive, {
+    let j = Jsonic.make().use(Directive, {
       name: 'none',
       open: '@',
       action: () => null,
       rules: null,
     })
+    expect(() => j('a:@x')).toThrow('unexpected')
+  })
+
+
+  test('error', () => {
+    let j = Jsonic.make().use(Directive, {
+      name: 'bad',
+      open: '@',
+      action: (rule: Rule) => {
+        return rule.parent?.open[0]?.bad('bad')
+      }
+    })
+    expect(() => j('a:@x')).toThrow(/bad.*:1:3/s)
   })
 
 

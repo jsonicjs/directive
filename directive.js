@@ -85,7 +85,7 @@ appear without the start characters "${open}" appearing first:
                 { s: [CLOSE] },
                 { s: [CA, CLOSE] },
             ] : null,
-            bc: (...all) => action(...all)
+            bc: (...all) => (action(...all))
         });
     });
 };

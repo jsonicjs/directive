@@ -112,7 +112,7 @@ appear without the start characters "${open}" appearing first:
         { s: [CLOSE] },
         { s: [CA, CLOSE] },
       ] : null,
-      bc: (...all: any[]) => (action as any)(...all)
+      bc: (...all: any[]) => ((action as any)(...all))
     })
   })
 }

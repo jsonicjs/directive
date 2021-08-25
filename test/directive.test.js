@@ -165,12 +165,24 @@ describe('directive', () => {
         expect(j('[add<a,b>]')).toEqual(['ab']);
     });
     test('edges', () => {
-        jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        let j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
             name: 'none',
             open: '@',
             action: () => null,
             rules: null,
         });
+        expect(() => j('a:@x')).toThrow('unexpected');
+    });
+    test('error', () => {
+        let j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+            name: 'bad',
+            open: '@',
+            action: (rule) => {
+                var _a, _b;
+                return (_b = (_a = rule.parent) === null || _a === void 0 ? void 0 : _a.open[0]) === null || _b === void 0 ? void 0 : _b.bad('bad');
+            }
+        });
+        expect(() => j('a:@x')).toThrow(/bad.*:1:3/s);
     });
 });
 //# sourceMappingURL=directive.test.js.map
