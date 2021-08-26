@@ -96,9 +96,7 @@ appear without the start characters "${open}" appearing first:
 
   jsonic.rule(name, () => {
     return new RuleSpec({
-      bo: () => {
-        return { node: {} }
-      },
+      bo: (rule: Rule) => (rule.node={}),
       open: [
         {
           p: 'val',
