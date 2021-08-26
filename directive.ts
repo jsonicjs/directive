@@ -1,5 +1,12 @@
 
-import { Jsonic, RuleSpec, Rule, AltAction, Plugin } from 'jsonic'
+import {
+  Jsonic,
+  makeRuleSpec,
+  Rule,
+  RuleSpec,
+  AltAction,
+  Plugin,
+} from 'jsonic'
 
 
 type DirectiveOptions = {
@@ -95,7 +102,7 @@ appear without the start characters "${open}" appearing first:
   })
 
   jsonic.rule(name, () => {
-    return new RuleSpec({
+    return makeRuleSpec({
       bo: (rule: Rule) => (rule.node={}),
       open: [
         {

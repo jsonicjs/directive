@@ -69,7 +69,7 @@ appear without the start characters "${open}" appearing first:
         });
     });
     jsonic.rule(name, () => {
-        return new jsonic_1.RuleSpec({
+        return jsonic_1.makeRuleSpec({
             bo: (rule) => (rule.node = {}),
             open: [
                 {
