@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Directive = void 0;
-const jsonic_1 = require("jsonic");
 const Directive = (jsonic, options) => {
     let rules = ('string' == typeof options.rules ? options.rules.split(/\s*,\s*/) :
         (options.rules || [])).filter(rulename => '' !== rulename);
@@ -68,24 +67,22 @@ appear without the start characters "${open}" appearing first:
             return rs;
         });
     });
-    jsonic.rule(name, () => {
-        return jsonic_1.makeRuleSpec({
-            bo: (rule) => (rule.node = {}),
-            open: [
-                {
-                    p: 'val',
-                    // Only accept implicits when there is a CLOSE token,
-                    // otherwise we'll eat all following siblings.
-                    n: null == close ? {} : { pk: -1, il: 0 }
-                },
-            ],
-            close: null != close ? [
-                { s: [CLOSE] },
-                { s: [CA, CLOSE] },
-            ] : null,
-            bc: (...all) => (action(...all))
-        });
-    });
+    jsonic.rule(name, (rs) => rs
+        .clear()
+        .bo((rule) => (rule.node = {}))
+        .open([
+        {
+            p: 'val',
+            // Only accept implicits when there is a CLOSE token,
+            // otherwise we'll eat all following siblings.
+            n: null == close ? {} : { pk: -1, il: 0 }
+        },
+    ])
+        .bc((...all) => (action(...all)))
+        .close(null != close ? [
+        { s: [CLOSE] },
+        { s: [CA, CLOSE] },
+    ] : []));
 };
 exports.Directive = Directive;
 Directive.defaults = {
