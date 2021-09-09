@@ -1,4 +1,5 @@
 "use strict";
+/* Copyright (c) 2021 Richard Rodger, MIT License */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Directive = void 0;
 const Directive = (jsonic, options) => {

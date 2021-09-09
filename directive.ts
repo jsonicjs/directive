@@ -1,3 +1,5 @@
+/* Copyright (c) 2021 Richard Rodger, MIT License */
+
 
 import {
   Jsonic,
