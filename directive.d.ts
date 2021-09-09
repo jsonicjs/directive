@@ -2,7 +2,7 @@ import { AltAction, Plugin } from 'jsonic';
 declare type DirectiveOptions = {
     name: string;
     open: string;
-    action: AltAction;
+    action: AltAction | string;
     close?: string;
     rules?: string | string[];
 };

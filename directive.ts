@@ -5,7 +5,7 @@ import { Jsonic, Rule, RuleSpec, AltAction, Plugin } from 'jsonic'
 type DirectiveOptions = {
   name: string
   open: string
-  action: AltAction
+  action: AltAction | string
   close?: string
   rules?: string | string[]
 }
@@ -20,6 +20,11 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
   let open = options.open
   let close = options.close
   let action = options.action
+
+  if ('string' === typeof (action)) {
+    let path = action
+    action = (rule: Rule) => rule.node = jsonic.util.prop(jsonic.options, path)
+  }
 
   let token: Record<string, string> = {}
 
@@ -50,12 +55,12 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
         null == close
           ? null
           : 'directive ' +
-            name +
-            ' close "' +
-            close +
-            '" without open "' +
-            open +
-            '"',
+          name +
+          ' close "' +
+          close +
+          '" without open "' +
+          open +
+          '"',
     },
     hint: {
       [name + '_close']:

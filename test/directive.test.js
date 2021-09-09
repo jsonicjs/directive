@@ -38,12 +38,22 @@ describe('directive', () => {
         expect(j('{"a":[1,@b]}')).toEqual({ a: [1, '<b>'] });
     });
     test('constant', () => {
-        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        const j0 = jsonic_1.Jsonic.make().use(directive_1.Directive, {
             name: 'constant',
             open: '@',
             action: (rule) => rule.node = 'X'
         });
-        expect(j('@')).toEqual('X');
+        expect(j0('@')).toEqual('X');
+    });
+    test('action-option-prop', () => {
+        const j0 = jsonic_1.Jsonic.make()
+            .use(directive_1.Directive, {
+            name: 'constant',
+            open: '@',
+            action: 'custom.x'
+        });
+        j0.options({ custom: { x: 11 } });
+        expect(j0('@')).toEqual(11);
     });
     test('close', () => {
         const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {

@@ -48,14 +48,28 @@ describe('directive', () => {
 
 
   test('constant', () => {
-    const j = Jsonic.make().use(Directive, {
+    const j0 = Jsonic.make().use(Directive, {
       name: 'constant',
       open: '@',
       action: (rule: Rule) => rule.node = 'X'
     })
 
-    expect(j('@')).toEqual('X')
+    expect(j0('@')).toEqual('X')
   })
+
+
+  test('action-option-prop', () => {
+    const j0 = Jsonic.make()
+      .use(Directive, {
+        name: 'constant',
+        open: '@',
+        action: 'custom.x'
+      })
+    j0.options({ custom: { x: 11 } })
+
+    expect(j0('@')).toEqual(11)
+  })
+
 
 
   test('close', () => {
