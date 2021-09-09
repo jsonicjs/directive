@@ -10,9 +10,9 @@ const Directive = (jsonic, options) => {
     let open = options.open;
     let close = options.close;
     let action = options.action;
-    if ('string' === typeof (action)) {
+    if ('string' === typeof action) {
         let path = action;
-        action = (rule) => rule.node = jsonic.util.prop(jsonic.options, path);
+        action = (rule) => (rule.node = jsonic.util.prop(jsonic.options, path));
     }
     let token = {};
     let openTN = '#D_open_' + name;
