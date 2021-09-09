@@ -37,6 +37,14 @@ describe('directive', () => {
         expect(j('{"a":1,@[2]}')).toEqual({ a: 1, pair$: [2] });
         expect(j('{"a":[1,@b]}')).toEqual({ a: [1, '<b>'] });
     });
+    test('constant', () => {
+        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+            name: 'constant',
+            open: '@',
+            action: (rule) => rule.node = 'X'
+        });
+        expect(j('@')).toEqual('X');
+    });
     test('close', () => {
         const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
             name: 'foo',

@@ -7,5 +7,5 @@ declare type DirectiveOptions = {
     rules?: string | string[];
 };
 declare const Directive: Plugin;
-export { Directive, };
-export type { DirectiveOptions, };
+export { Directive };
+export type { DirectiveOptions };

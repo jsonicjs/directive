@@ -1,14 +1,6 @@
 /* Copyright (c) 2021 Richard Rodger, MIT License */
 
-
-import {
-  Jsonic,
-  Rule,
-  RuleSpec,
-  AltAction,
-  Plugin,
-} from 'jsonic'
-
+import { Jsonic, Rule, RuleSpec, AltAction, Plugin } from 'jsonic'
 
 type DirectiveOptions = {
   name: string
@@ -18,11 +10,12 @@ type DirectiveOptions = {
   rules?: string | string[]
 }
 
-
 const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
-  let rules: string[] =
-    ('string' == typeof options.rules ? options.rules.split(/\s*,\s*/) :
-      (options.rules || [])).filter(rulename => '' !== rulename)
+  let rules: string[] = (
+    'string' == typeof options.rules
+      ? options.rules.split(/\s*,\s*/)
+      : options.rules || []
+  ).filter((rulename) => '' !== rulename)
   let name = options.name
   let open = options.open
   let close = options.close
@@ -33,15 +26,13 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
   let openTN = '#D_open_' + name
   let closeTN = '#D_close_' + name
 
-
   let OPEN = jsonic.fixed(open)
   let CLOSE = null == close ? null : jsonic.fixed(close)
 
   // OPEN must be unique
   if (null != OPEN) {
     throw new Error('Directive open token already in use: ' + open)
-  }
-  else {
+  } else {
     token[openTN] = open
   }
 
@@ -50,23 +41,32 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
     token[closeTN] = close
   }
 
-
   jsonic.options({
     fixed: {
-      token
+      token,
     },
     error: {
-      [name + '_close']: null == close ? null :
-        'directive ' + name + ' close "' + close + '" without open "' + open + '"'
+      [name + '_close']:
+        null == close
+          ? null
+          : 'directive ' +
+            name +
+            ' close "' +
+            close +
+            '" without open "' +
+            open +
+            '"',
     },
     hint: {
-      [name + '_close']: null == close ? null :
-        `
+      [name + '_close']:
+        null == close
+          ? null
+          : `
 The ${name} directive must start with the characters "${open}" and end
 with the characters "${close}". The end characters "${close}" may not
 appear without the start characters "${open}" appearing first:
 "${open}...${close}".
-`
+`,
     },
   })
 
@@ -77,7 +77,7 @@ appear without the start characters "${open}" appearing first:
   // NOTE: RuleSpec.open|close refers to Rule state, whereas
   // OPEN|CLOSE refers to opening and closing tokens for the directive.
 
-  rules.forEach(rulename => {
+  rules.forEach((rulename) => {
     jsonic.rule(rulename, (rs: RuleSpec) => {
       rs.open({ s: [OPEN], p: name, n: { dr: 1 } })
 
@@ -86,12 +86,13 @@ appear without the start characters "${open}" appearing first:
           {
             s: [CLOSE],
             c: { n: { dr: 0 } },
-            e: (_r: Rule, ctx: any) => ctx.t0.bad(name + '_close')
+            e: (_r: Rule, ctx: any) => ctx.t0.bad(name + '_close'),
           },
 
           // <2,> case
           {
-            s: [CLOSE], b: 1,
+            s: [CLOSE],
+            b: 1,
           },
         ])
 
@@ -102,9 +103,8 @@ appear without the start characters "${open}" appearing first:
     })
   })
 
-  jsonic.rule(
-    name,
-    (rs) => rs
+  jsonic.rule(name, (rs) =>
+    rs
       .clear()
       .bo((rule: Rule) => (rule.node = {}))
       .open([
@@ -113,27 +113,18 @@ appear without the start characters "${open}" appearing first:
 
           // Only accept implicits when there is a CLOSE token,
           // otherwise we'll eat all following siblings.
-          n: null == close ? {} : { pk: -1, il: 0 }
+          n: null == close ? {} : { pk: -1, il: 0 },
         },
       ])
-      .bc((...all: any[]) => ((action as any)(...all)))
-      .close(null != close ? [
-        { s: [CLOSE] },
-        { s: [CA, CLOSE] },
-      ] : [])
+      .bc((...all: any[]) => (action as any)(...all))
+      .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : [])
   )
 }
 
+Directive.defaults = {
+  rules: 'val,pair,elem',
+} as DirectiveOptions
 
-Directive.defaults = ({
-  rules: 'val,pair,elem'
-} as DirectiveOptions)
+export { Directive }
 
-
-export {
-  Directive,
-}
-
-export type {
-  DirectiveOptions,
-}
+export type { DirectiveOptions }

@@ -47,6 +47,17 @@ describe('directive', () => {
   })
 
 
+  test('constant', () => {
+    const j = Jsonic.make().use(Directive, {
+      name: 'constant',
+      open: '@',
+      action: (rule: Rule) => rule.node = 'X'
+    })
+
+    expect(j('@')).toEqual('X')
+  })
+
+
   test('close', () => {
     const j = Jsonic.make().use(Directive, {
       name: 'foo',

@@ -3,8 +3,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Directive = void 0;
 const Directive = (jsonic, options) => {
-    let rules = ('string' == typeof options.rules ? options.rules.split(/\s*,\s*/) :
-        (options.rules || [])).filter(rulename => '' !== rulename);
+    let rules = ('string' == typeof options.rules
+        ? options.rules.split(/\s*,\s*/)
+        : options.rules || []).filter((rulename) => '' !== rulename);
     let name = options.name;
     let open = options.open;
     let close = options.close;
@@ -27,20 +28,28 @@ const Directive = (jsonic, options) => {
     }
     jsonic.options({
         fixed: {
-            token
+            token,
         },
         error: {
-            [name + '_close']: null == close ? null :
-                'directive ' + name + ' close "' + close + '" without open "' + open + '"'
+            [name + '_close']: null == close
+                ? null
+                : 'directive ' +
+                    name +
+                    ' close "' +
+                    close +
+                    '" without open "' +
+                    open +
+                    '"',
         },
         hint: {
-            [name + '_close']: null == close ? null :
-                `
+            [name + '_close']: null == close
+                ? null
+                : `
 The ${name} directive must start with the characters "${open}" and end
 with the characters "${close}". The end characters "${close}" may not
 appear without the start characters "${open}" appearing first:
 "${open}...${close}".
-`
+`,
         },
     });
     let CA = jsonic.token.CA;
@@ -48,7 +57,7 @@ appear without the start characters "${open}" appearing first:
     CLOSE = null == close ? null : jsonic.fixed(close);
     // NOTE: RuleSpec.open|close refers to Rule state, whereas
     // OPEN|CLOSE refers to opening and closing tokens for the directive.
-    rules.forEach(rulename => {
+    rules.forEach((rulename) => {
         jsonic.rule(rulename, (rs) => {
             rs.open({ s: [OPEN], p: name, n: { dr: 1 } });
             if (null != close) {
@@ -56,11 +65,12 @@ appear without the start characters "${open}" appearing first:
                     {
                         s: [CLOSE],
                         c: { n: { dr: 0 } },
-                        e: (_r, ctx) => ctx.t0.bad(name + '_close')
+                        e: (_r, ctx) => ctx.t0.bad(name + '_close'),
                     },
                     // <2,> case
                     {
-                        s: [CLOSE], b: 1,
+                        s: [CLOSE],
+                        b: 1,
                     },
                 ]);
                 rs.close({ s: [CLOSE], b: 1 });
@@ -76,17 +86,14 @@ appear without the start characters "${open}" appearing first:
             p: 'val',
             // Only accept implicits when there is a CLOSE token,
             // otherwise we'll eat all following siblings.
-            n: null == close ? {} : { pk: -1, il: 0 }
+            n: null == close ? {} : { pk: -1, il: 0 },
         },
     ])
-        .bc((...all) => (action(...all)))
-        .close(null != close ? [
-        { s: [CLOSE] },
-        { s: [CA, CLOSE] },
-    ] : []));
+        .bc((...all) => action(...all))
+        .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : []));
 };
 exports.Directive = Directive;
 Directive.defaults = {
-    rules: 'val,pair,elem'
+    rules: 'val,pair,elem',
 };
 //# sourceMappingURL=directive.js.map
