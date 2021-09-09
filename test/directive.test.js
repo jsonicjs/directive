@@ -128,10 +128,13 @@ describe('directive', () => {
         expect(j('{x:20,<{y:2}>,z:3}')).toEqual({ x: 20, '$': { y: 2 }, z: 3 });
         expect(j('{x:30,<y:3>,z:4}')).toEqual({ x: 30, '$': { y: 3 }, z: 4 });
         expect(j('{x:40,<{y:2,z:3}>,k:5}')).toEqual({ x: 40, '$': { y: 2, z: 3 }, k: 5 });
-        expect(j('{x:50,<{y:2,z:3,q:4}>,k:5}')).toEqual({ x: 50, '$': { y: 2, z: 3, q: 4 }, k: 5 });
-        expect(j('{x:40,<{y:2,z:q:3,w:6}>,k:5}')).toEqual({ x: 40, '$': { y: 2, z: { q: 3 }, w: 6 }, k: 5 });
+        expect(j('{x:50,<{y:2,z:3,q:4}>,k:5}'))
+            .toEqual({ x: 50, '$': { y: 2, z: 3, q: 4 }, k: 5 });
+        expect(j('{x:40,<{y:2,z:q:3,w:6}>,k:5}'))
+            .toEqual({ x: 40, '$': { y: 2, z: { q: 3 }, w: 6 }, k: 5 });
         expect(j('{x:60,<y:3,z:4>,k:5}')).toEqual({ x: 60, '$': { y: 3, z: 4 }, k: 5 });
-        expect(j('{x:70,<y:3,z:q:4,w:6>,k:5}')).toEqual({ x: 70, '$': { y: 3, z: { q: 4 }, w: 6 }, k: 5 });
+        expect(j('{x:70,<y:3,z:q:4,w:6>,k:5}'))
+            .toEqual({ x: 70, '$': { y: 3, z: { q: 4 }, w: 6 }, k: 5 });
         expect(j('x:80,<{y:2,}>,z:3')).toEqual({ x: 80, '$': { y: 2 }, z: 3 });
         expect(j('x:90,<y:2,>,z:3')).toEqual({ x: 90, '$': { y: 2 }, z: 3 });
         expect(j('100,<2>,99')).toEqual([100, 2, 99]);
@@ -196,8 +199,8 @@ describe('directive', () => {
             name: 'bad',
             open: '@',
             action: (rule) => {
-                var _a, _b;
-                return (_b = (_a = rule.parent) === null || _a === void 0 ? void 0 : _a.open[0]) === null || _b === void 0 ? void 0 : _b.bad('bad');
+                var _a;
+                return (_a = rule.parent) === null || _a === void 0 ? void 0 : _a.o0.bad('bad');
             }
         });
         expect(() => j('a:@x')).toThrow(/bad.*:1:3/s);
