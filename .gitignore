@@ -26,5 +26,6 @@ test/coverage.html
 coverage
 
 package-lock.json
+yarn.lock
 
 
