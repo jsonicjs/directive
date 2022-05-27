@@ -1,6 +1,6 @@
 /* Copyright (c) 2021 Richard Rodger, MIT License */
 
-import { Jsonic, Rule, RuleSpec, AltAction, Plugin } from 'jsonic'
+import { Jsonic, Rule, RuleSpec, AltAction, Plugin } from '@jsonic/jsonic-next'
 
 type DirectiveOptions = {
   name: string

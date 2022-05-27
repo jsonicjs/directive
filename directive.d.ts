@@ -1,4 +1,4 @@
-import { AltAction, Plugin } from 'jsonic';
+import { AltAction, Plugin } from '@jsonic/jsonic-next';
 declare type DirectiveOptions = {
     name: string;
     open: string;

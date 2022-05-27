@@ -1,11 +1,11 @@
 "use strict";
-/* Copyright (c) 2021 Richard Rodger and other contributors, MIT License */
+/* Copyright (c) 2021-2022 Richard Rodger and other contributors, MIT License */
 Object.defineProperty(exports, "__esModule", { value: true });
-const jsonic_1 = require("jsonic");
+const jsonic_next_1 = require("@jsonic/jsonic-next");
 const directive_1 = require("../directive");
 describe('directive', () => {
     test('happy', () => {
-        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        const j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
             name: 'happy',
             open: '@',
             action: (rule) => {
@@ -38,7 +38,7 @@ describe('directive', () => {
         expect(j('{"a":[1,@b]}')).toEqual({ a: [1, '<b>'] });
     });
     test('constant', () => {
-        const j0 = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        const j0 = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
             name: 'constant',
             open: '@',
             action: (rule) => rule.node = 'X'
@@ -46,7 +46,7 @@ describe('directive', () => {
         expect(j0('@')).toEqual('X');
     });
     test('action-option-prop', () => {
-        const j0 = jsonic_1.Jsonic.make()
+        const j0 = jsonic_next_1.Jsonic.make()
             .use(directive_1.Directive, {
             name: 'constant',
             open: '@',
@@ -56,7 +56,7 @@ describe('directive', () => {
         expect(j0('@')).toEqual(11);
     });
     test('close', () => {
-        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        const j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
             name: 'foo',
             open: 'foo<',
             close: '>',
@@ -102,7 +102,7 @@ describe('directive', () => {
         })).toThrow(/bar</);
     });
     test('inject', () => {
-        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        const j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
             name: 'inject',
             open: '<',
             close: '>',
@@ -113,7 +113,7 @@ describe('directive', () => {
                 var _a, _b;
                 let from = rule.parent && rule.parent.name;
                 if ('pair' === from) {
-                    jsonic_1.Jsonic.util.deep(rule.node, rule.child.node);
+                    jsonic_next_1.Jsonic.util.deep(rule.node, rule.child.node);
                     if ((_a = rule.parent) === null || _a === void 0 ? void 0 : _a.node) {
                         rule.parent.node.$ = rule.child.node;
                     }
@@ -151,7 +151,7 @@ describe('directive', () => {
         expect(j('210,<,2,3,4>,99')).toEqual([210, [null, 2, 3, 4], 99]);
     });
     test('adder', () => {
-        const j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        const j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
             name: 'adder',
             open: 'add<',
             close: '>',
@@ -186,7 +186,7 @@ describe('directive', () => {
         expect(j('[add<a,b>]')).toEqual(['ab']);
     });
     test('edges', () => {
-        let j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        let j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
             name: 'none',
             open: '@',
             action: () => null,
@@ -195,7 +195,7 @@ describe('directive', () => {
         expect(() => j('a:@x')).toThrow('unexpected');
     });
     test('error', () => {
-        let j = jsonic_1.Jsonic.make().use(directive_1.Directive, {
+        let j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
             name: 'bad',
             open: '@',
             action: (rule) => {
