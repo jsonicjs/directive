@@ -1,11 +1,18 @@
-/* Copyright (c) 2021 Richard Rodger, MIT License */
+/* Copyright (c) 2021-2022 Richard Rodger, MIT License */
 
-import { Jsonic, Rule, RuleSpec, AltAction, Plugin } from '@jsonic/jsonic-next'
+import {
+  Jsonic,
+  Rule,
+  RuleSpec,
+  StateAction,
+  Plugin,
+  Context,
+} from '@jsonic/jsonic-next'
 
 type DirectiveOptions = {
   name: string
   open: string
-  action: AltAction | string
+  action: StateAction | string
   close?: string
   rules?: string | string[]
 }
@@ -19,12 +26,14 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
   let name = options.name
   let open = options.open
   let close = options.close
-  let action = options.action
+  let action: StateAction
 
-  if ('string' === typeof action) {
-    let path = action
+  if ('string' === typeof options.action) {
+    let path = options.action
     action = (rule: Rule) =>
       (rule.node = jsonic.util.prop(jsonic.options, path))
+  } else {
+    action = options.action
   }
 
   let token: Record<string, string> = {}
@@ -112,7 +121,7 @@ appear without the start characters "${open}" appearing first:
   jsonic.rule(name, (rs) =>
     rs
       .clear()
-      .bo((rule: Rule) => (rule.node = {}))
+      .bo((rule: Rule) => ((rule.node = {}), undefined))
       .open([
         {
           p: 'val',
@@ -122,7 +131,13 @@ appear without the start characters "${open}" appearing first:
           n: null == close ? {} : { pk: -1, il: 0 },
         },
       ])
-      .bc((...all: any[]) => (action as any)(...all))
+      // .bc((...all: any[]) => (action as any)(...all))
+      .bc(function (this: RuleSpec, rule: Rule, ctx: Context) {
+        let out = action.call(this, rule, ctx)
+        if (out?.isToken) {
+          return out
+        }
+      })
       .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : [])
   )
 }

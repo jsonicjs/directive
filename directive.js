@@ -1,5 +1,5 @@
 "use strict";
-/* Copyright (c) 2021 Richard Rodger, MIT License */
+/* Copyright (c) 2021-2022 Richard Rodger, MIT License */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Directive = void 0;
 const Directive = (jsonic, options) => {
@@ -9,10 +9,13 @@ const Directive = (jsonic, options) => {
     let name = options.name;
     let open = options.open;
     let close = options.close;
-    let action = options.action;
-    if ('string' === typeof action) {
-        let path = action;
+    let action;
+    if ('string' === typeof options.action) {
+        let path = options.action;
         action = (rule) => (rule.node = jsonic.util.prop(jsonic.options, path));
+    }
+    else {
+        action = options.action;
     }
     let token = {};
     let openTN = '#D_open_' + name;
@@ -84,7 +87,7 @@ appear without the start characters "${open}" appearing first:
     });
     jsonic.rule(name, (rs) => rs
         .clear()
-        .bo((rule) => (rule.node = {}))
+        .bo((rule) => ((rule.node = {}), undefined))
         .open([
         {
             p: 'val',
@@ -93,7 +96,13 @@ appear without the start characters "${open}" appearing first:
             n: null == close ? {} : { pk: -1, il: 0 },
         },
     ])
-        .bc((...all) => action(...all))
+        // .bc((...all: any[]) => (action as any)(...all))
+        .bc(function (rule, ctx) {
+        let out = action.call(this, rule, ctx);
+        if (out === null || out === void 0 ? void 0 : out.isToken) {
+            return out;
+        }
+    })
         .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : []));
 };
 exports.Directive = Directive;

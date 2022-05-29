@@ -1,8 +1,8 @@
-import { AltAction, Plugin } from '@jsonic/jsonic-next';
+import { StateAction, Plugin } from '@jsonic/jsonic-next';
 declare type DirectiveOptions = {
     name: string;
     open: string;
-    action: AltAction | string;
+    action: StateAction | string;
     close?: string;
     rules?: string | string[];
 };
