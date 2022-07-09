@@ -7,6 +7,7 @@ import {
   StateAction,
   Plugin,
   Context,
+  Token,
 } from '@jsonic/jsonic-next'
 
 type DirectiveOptions = {
@@ -131,9 +132,14 @@ appear without the start characters "${open}" appearing first:
           n: null == close ? {} : { pk: -1, il: 0 },
         },
       ])
-      // .bc((...all: any[]) => (action as any)(...all))
-      .bc(function (this: RuleSpec, rule: Rule, ctx: Context) {
-        let out = action.call(this, rule, ctx)
+      .bc(function (
+        this: RuleSpec,
+        rule: Rule,
+        ctx: Context,
+        next: Rule,
+        tkn?: Token | void
+      ) {
+        let out = action.call(this, rule, ctx, next, tkn)
         if (out?.isToken) {
           return out
         }

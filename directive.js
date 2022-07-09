@@ -96,9 +96,8 @@ appear without the start characters "${open}" appearing first:
             n: null == close ? {} : { pk: -1, il: 0 },
         },
     ])
-        // .bc((...all: any[]) => (action as any)(...all))
-        .bc(function (rule, ctx) {
-        let out = action.call(this, rule, ctx);
+        .bc(function (rule, ctx, next, tkn) {
+        let out = action.call(this, rule, ctx, next, tkn);
         if (out === null || out === void 0 ? void 0 : out.isToken) {
             return out;
         }
