@@ -66,13 +66,19 @@ appear without the start characters "${open}" appearing first:
     // OPEN|CLOSE refers to opening and closing tokens for the directive.
     rules.forEach((rulename) => {
         jsonic.rule(rulename, (rs) => {
-            rs.open({ s: [OPEN], p: name, n: { dr: 1 } });
+            rs.open({
+                s: [OPEN],
+                p: name,
+                n: { dr: 1 },
+                g: 'start',
+            });
             if (null != close) {
                 rs.open([
                     {
                         s: [CLOSE],
                         c: { n: { dr: 0 } },
                         e: (_r, ctx) => ctx.t0.bad(name + '_close'),
+                        g: 'end',
                     },
                     // <2,> case
                     {
@@ -80,11 +86,28 @@ appear without the start characters "${open}" appearing first:
                         b: 1,
                     },
                 ]);
-                rs.close({ s: [CLOSE], b: 1 });
+                rs.close({
+                    s: [CLOSE],
+                    b: 1
+                });
             }
             return rs;
         });
     });
+    if (null != CLOSE) {
+        jsonic.rule('map', (rs) => {
+            rs.close([{
+                    s: [CLOSE],
+                    b: 1
+                }]);
+        });
+        jsonic.rule('list', (rs) => {
+            rs.close([{
+                    s: [CLOSE],
+                    b: 1
+                }]);
+        });
+    }
     jsonic.rule(name, (rs) => rs
         .clear()
         .bo((rule) => ((rule.node = {}), undefined))
@@ -102,7 +125,11 @@ appear without the start characters "${open}" appearing first:
             return out;
         }
     })
-        .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : []));
+        .close(null != close ? [
+        { s: [CLOSE] },
+        { s: [CA, CLOSE] },
+    ] :
+        []));
 };
 exports.Directive = Directive;
 Directive.defaults = {

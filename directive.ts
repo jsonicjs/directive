@@ -66,12 +66,12 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
         null == close
           ? null
           : 'directive ' +
-            name +
-            ' close "' +
-            close +
-            '" without open "' +
-            open +
-            '"',
+          name +
+          ' close "' +
+          close +
+          '" without open "' +
+          open +
+          '"',
     },
     hint: {
       [name + '_close']:
@@ -95,7 +95,12 @@ appear without the start characters "${open}" appearing first:
 
   rules.forEach((rulename) => {
     jsonic.rule(rulename, (rs: RuleSpec) => {
-      rs.open({ s: [OPEN], p: name, n: { dr: 1 } })
+      rs.open({
+        s: [OPEN],
+        p: name,
+        n: { dr: 1 },
+        g: 'start',
+      })
 
       if (null != close) {
         rs.open([
@@ -103,6 +108,7 @@ appear without the start characters "${open}" appearing first:
             s: [CLOSE],
             c: { n: { dr: 0 } },
             e: (_r: Rule, ctx: any) => ctx.t0.bad(name + '_close'),
+            g: 'end',
           },
 
           // <2,> case
@@ -112,12 +118,33 @@ appear without the start characters "${open}" appearing first:
           },
         ])
 
-        rs.close({ s: [CLOSE], b: 1 })
+        rs.close({
+          s: [CLOSE],
+          b: 1
+        })
       }
 
       return rs
     })
   })
+
+
+  if (null != CLOSE) {
+    jsonic.rule('map', (rs: RuleSpec) => {
+      rs.close([{
+        s: [CLOSE],
+        b: 1
+      }])
+    })
+
+    jsonic.rule('list', (rs: RuleSpec) => {
+      rs.close([{
+        s: [CLOSE],
+        b: 1
+      }])
+    })
+  }
+
 
   jsonic.rule(name, (rs) =>
     rs
@@ -132,7 +159,7 @@ appear without the start characters "${open}" appearing first:
           n: null == close ? {} : { pk: -1, il: 0 },
         },
       ])
-      .bc(function (
+      .bc(function(
         this: RuleSpec,
         rule: Rule,
         ctx: Context,
@@ -144,7 +171,11 @@ appear without the start characters "${open}" appearing first:
           return out
         }
       })
-      .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : [])
+      .close(null != close ? [
+        { s: [CLOSE] },
+        { s: [CA, CLOSE] },
+      ] :
+        [])
   )
 }
 

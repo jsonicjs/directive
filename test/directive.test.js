@@ -28,7 +28,7 @@ describe('directive', () => {
             }
         });
         expect(j('@t')).toEqual('val:"T"');
-        expect(j('{"a":1}')).toEqual({ a: 1 });
+        expect(j('{"a":1}', { xlog: -1 })).toEqual({ a: 1 });
         expect(j('{"a":@ a}')).toEqual({ a: 'val:"A"' });
         expect(j('{"a":@a,b:2}')).toEqual({ a: 'val:"A"', b: 2 });
         expect(j('{"a":@{x:1}}')).toEqual({ a: 'val:{"X":1}' });
@@ -110,20 +110,30 @@ describe('directive', () => {
                 // console.log('Pn',rule.parent.node)
                 // console.log('Sn',rule.node)
                 // console.log('Cn',rule.child.node)
-                var _a, _b;
                 let from = rule.parent && rule.parent.name;
                 if ('pair' === from) {
                     jsonic_next_1.Jsonic.util.deep(rule.node, rule.child.node);
-                    if ((_a = rule.parent) === null || _a === void 0 ? void 0 : _a.node) {
-                        rule.parent.node.$ = rule.child.node;
-                    }
+                    rule.parent.node.$ = rule.child.node;
                 }
                 else if ('elem' === from) {
-                    rule.node = undefined;
-                    (_b = rule.parent) === null || _b === void 0 ? void 0 : _b.node.push(rule.child.node);
+                    // rule.node = undefined
+                    // rule.parent?.node.push(rule.child.node)
+                    // always place first
+                    rule.parent.node.unshift(rule.child.node);
+                    rule.parent.use.done = true;
+                }
+                else if ('val' === from) {
+                    // console.log('VAL', rule)
+                    jsonic_next_1.Jsonic.util.deep(rule.node, rule.child.node);
+                    rule.parent.node = rule.parent.node || {};
+                    rule.parent.node.$ = rule.child.node;
                 }
             }
         });
+        expect(j('{<{y:2}>}')).toEqual({ '$': { y: 2 } });
+        expect(j('<{y:2}>', { xlog: -1 })).toEqual({ '$': { y: 2 } });
+        expect(j('[<1>]')).toEqual([1]);
+        expect(j('[2,<1>]')).toEqual([1, 2]);
         expect(j('x:10,<{y:2}>,z:3')).toEqual({ x: 10, '$': { y: 2 }, z: 3 });
         expect(j('{x:20,<{y:2}>,z:3}')).toEqual({ x: 20, '$': { y: 2 }, z: 3 });
         expect(j('{x:30,<y:3>,z:4}')).toEqual({ x: 30, '$': { y: 3 }, z: 4 });
@@ -137,18 +147,18 @@ describe('directive', () => {
             .toEqual({ x: 70, '$': { y: 3, z: { q: 4 }, w: 6 }, k: 5 });
         expect(j('x:80,<{y:2,}>,z:3')).toEqual({ x: 80, '$': { y: 2 }, z: 3 });
         expect(j('x:90,<y:2,>,z:3')).toEqual({ x: 90, '$': { y: 2 }, z: 3 });
-        expect(j('100,<2>,99')).toEqual([100, 2, 99]);
-        expect(j('110,<[2]>,99')).toEqual([110, [2], 99]);
-        expect(j('120,<[2,3]>,99')).toEqual([120, [2, 3], 99]);
-        expect(j('130,<[2,3,4]>,99')).toEqual([130, [2, 3, 4], 99]);
-        expect(j('140,<[2,3,4,5]>,99')).toEqual([140, [2, 3, 4, 5], 99]);
-        expect(j('150,<[2,3,4,5,]>,99')).toEqual([150, [2, 3, 4, 5], 99]);
-        expect(j('160,<[,2,3,4,5,]>,99')).toEqual([160, [null, 2, 3, 4, 5], 99]);
-        expect(j('170,<2,3>,99')).toEqual([170, [2, 3], 99]);
-        expect(j('180,<2,3,4>,99')).toEqual([180, [2, 3, 4], 99]);
-        expect(j('190,<2,>,99')).toEqual([190, [2], 99]);
-        expect(j('200,<2,3,4,>,99')).toEqual([200, [2, 3, 4], 99]);
-        expect(j('210,<,2,3,4>,99')).toEqual([210, [null, 2, 3, 4], 99]);
+        expect(j('100,<2>,99')).toEqual([2, 100, 99]);
+        expect(j('110,<[2]>,99')).toEqual([[2], 110, 99]);
+        expect(j('120,<[2,3]>,99')).toEqual([[2, 3], 120, 99]);
+        expect(j('130,<[2,3,4]>,99')).toEqual([[2, 3, 4], 130, 99]);
+        expect(j('140,<[2,3,4,5]>,99')).toEqual([[2, 3, 4, 5], 140, 99]);
+        expect(j('150,<[2,3,4,5,]>,99')).toEqual([[2, 3, 4, 5], 150, 99]);
+        expect(j('160,<[,2,3,4,5,]>,99')).toEqual([[null, 2, 3, 4, 5], 160, 99]);
+        expect(j('170,<2,3>,99')).toEqual([[2, 3], 170, 99]);
+        expect(j('180,<2,3,4>,99')).toEqual([[2, 3, 4], 180, 99]);
+        expect(j('190,<2,>,99')).toEqual([[2], 190, 99]);
+        expect(j('200,<2,3,4,>,99')).toEqual([[2, 3, 4], 200, 99]);
+        expect(j('210,<,2,3,4>,99')).toEqual([[null, 2, 3, 4], 210, 99]);
     });
     test('adder', () => {
         const j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {

@@ -1,5 +1,5 @@
 import { StateAction, Plugin } from '@jsonic/jsonic-next';
-declare type DirectiveOptions = {
+type DirectiveOptions = {
     name: string;
     open: string;
     action: StateAction | string;
