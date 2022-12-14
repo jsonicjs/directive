@@ -2,10 +2,14 @@
 /* Copyright (c) 2021-2022 Richard Rodger, MIT License */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Directive = void 0;
+const parseList = (list) => ('string' == typeof list ?
+    list.split(/\s*,\s*/) : (list || [])).filter((item) => null != item && '' !== item);
 const Directive = (jsonic, options) => {
-    let rules = ('string' == typeof options.rules
-        ? options.rules.split(/\s*,\s*/)
-        : options.rules || []).filter((rulename) => '' !== rulename);
+    var _a, _b;
+    let rules = {
+        open: parseList((_a = options === null || options === void 0 ? void 0 : options.rules) === null || _a === void 0 ? void 0 : _a.open),
+        close: parseList((_b = options === null || options === void 0 ? void 0 : options.rules) === null || _b === void 0 ? void 0 : _b.close),
+    };
     let name = options.name;
     let open = options.open;
     let close = options.close;
@@ -64,7 +68,7 @@ appear without the start characters "${open}" appearing first:
     CLOSE = null == close ? null : jsonic.fixed(close);
     // NOTE: RuleSpec.open|close refers to Rule state, whereas
     // OPEN|CLOSE refers to opening and closing tokens for the directive.
-    rules.forEach((rulename) => {
+    rules.open.forEach((rulename) => {
         jsonic.rule(rulename, (rs) => {
             rs.open({
                 s: [OPEN],
@@ -95,17 +99,13 @@ appear without the start characters "${open}" appearing first:
         });
     });
     if (null != CLOSE) {
-        jsonic.rule('map', (rs) => {
-            rs.close([{
-                    s: [CLOSE],
-                    b: 1
-                }]);
-        });
-        jsonic.rule('list', (rs) => {
-            rs.close([{
-                    s: [CLOSE],
-                    b: 1
-                }]);
+        rules.close.forEach((rulename) => {
+            jsonic.rule(rulename, (rs) => {
+                rs.close([{
+                        s: [CLOSE],
+                        b: 1
+                    }]);
+            });
         });
     }
     jsonic.rule(name, (rs) => rs
@@ -133,6 +133,9 @@ appear without the start characters "${open}" appearing first:
 };
 exports.Directive = Directive;
 Directive.defaults = {
-    rules: 'val,pair,elem',
+    rules: {
+        open: 'val,pair,elem',
+        close: 'map,list',
+    }
 };
 //# sourceMappingURL=directive.js.map

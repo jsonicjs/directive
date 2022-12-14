@@ -4,7 +4,10 @@ type DirectiveOptions = {
     open: string;
     action: StateAction | string;
     close?: string;
-    rules?: string | string[];
+    rules?: {
+        open?: string | string[];
+        close?: string | string[];
+    };
 };
 declare const Directive: Plugin;
 export { Directive };

@@ -15,15 +15,25 @@ type DirectiveOptions = {
   open: string
   action: StateAction | string
   close?: string
-  rules?: string | string[]
+  rules?: {
+    open?: string | string[]
+    close?: string | string[]
+  }
 }
 
+
+const parseList = (list: undefined | string | string[]): string[] =>
+  ('string' == typeof list ?
+    list.split(/\s*,\s*/) : (list || [])
+  ).filter((item) => null != item && '' !== item)
+
+
 const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
-  let rules: string[] = (
-    'string' == typeof options.rules
-      ? options.rules.split(/\s*,\s*/)
-      : options.rules || []
-  ).filter((rulename) => '' !== rulename)
+  let rules = {
+    open: parseList(options?.rules?.open),
+    close: parseList(options?.rules?.close),
+  }
+
   let name = options.name
   let open = options.open
   let close = options.close
@@ -93,7 +103,7 @@ appear without the start characters "${open}" appearing first:
   // NOTE: RuleSpec.open|close refers to Rule state, whereas
   // OPEN|CLOSE refers to opening and closing tokens for the directive.
 
-  rules.forEach((rulename) => {
+  rules.open.forEach((rulename) => {
     jsonic.rule(rulename, (rs: RuleSpec) => {
       rs.open({
         s: [OPEN],
@@ -130,18 +140,13 @@ appear without the start characters "${open}" appearing first:
 
 
   if (null != CLOSE) {
-    jsonic.rule('map', (rs: RuleSpec) => {
-      rs.close([{
-        s: [CLOSE],
-        b: 1
-      }])
-    })
-
-    jsonic.rule('list', (rs: RuleSpec) => {
-      rs.close([{
-        s: [CLOSE],
-        b: 1
-      }])
+    rules.close.forEach((rulename) => {
+      jsonic.rule(rulename, (rs: RuleSpec) => {
+        rs.close([{
+          s: [CLOSE],
+          b: 1
+        }])
+      })
     })
   }
 
@@ -180,7 +185,10 @@ appear without the start characters "${open}" appearing first:
 }
 
 Directive.defaults = {
-  rules: 'val,pair,elem',
+  rules: {
+    open: 'val,pair,elem',
+    close: 'map,list',
+  }
 } as DirectiveOptions
 
 export { Directive }
