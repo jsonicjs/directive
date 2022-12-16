@@ -78,24 +78,7 @@ appear without the start characters "${open}" appearing first:
                 n: { ['dr_' + name]: 1 },
                 g: 'start',
             });
-            // .close({
-            //   s: [OPEN],
-            //   b: 1,
-            // })
             if (null != close) {
-                //   rs.open([
-                //     {
-                //       s: [CLOSE],
-                //       c: { n: { dr: 0 } },
-                //       e: (_r: Rule, ctx: any) => ctx.t0.bad(name + '_close'),
-                //       g: 'end',
-                //     },
-                //     // <2,> case
-                //     {
-                //       s: [CLOSE],
-                //       b: 1,
-                //     },
-                //   ])
                 rs
                     .open({
                     s: [OPEN, CLOSE],
