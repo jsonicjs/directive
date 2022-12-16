@@ -1,4 +1,4 @@
-import { StateAction, Plugin } from '@jsonic/jsonic-next';
+import { Jsonic, StateAction, Plugin, Tin } from '@jsonic/jsonic-next';
 type DirectiveOptions = {
     name: string;
     open: string;
@@ -8,6 +8,11 @@ type DirectiveOptions = {
         open?: string | string[];
         close?: string | string[];
     };
+    custom?: (jsonic: Jsonic, config: {
+        OPEN: Tin;
+        CLOSE: Tin | null | undefined;
+        name: string;
+    }) => void;
 };
 declare const Directive: Plugin;
 export { Directive };

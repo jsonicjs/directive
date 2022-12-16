@@ -4,42 +4,99 @@ const { Directive } = require('..')
 
 
 const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
-  name: 'inject',
-  open: '<',
-  close: '>',
-  action: (rule) => {
-    // console.log('Pn',rule.parent.node)
-    // console.log('Sn',rule.node)
-    // console.log('Cn',rule.child.node)
-    
-
-    let from = rule.parent && rule.parent.name
-    console.log('FROM', from)
-    
-    
-    if ('pair' === from) {
-      Jsonic.util.deep(rule.node, rule.child.node)
-      // rule.parent.node = rule.parent.node || {}
-
-      rule.parent.node.$ = rule.child.node
-    }
-    else if ('elem' === from) {
-      // rule.node = undefined
-      // rule.parent?.node.push(rule.child.node)
-      rule.parent.node.unshift(rule.child.node)
-      rule.parent.use.done = true
-    }
-    else if('val' === from) {
-      console.log('VAL', rule)
-
-      Jsonic.util.deep(rule.node, rule.child.node)
-      rule.parent.node = rule.parent.node || {}
-      rule.parent.node.$ = rule.child.node
-    }
-  }
+  name: 'constant',
+  open: '@',
+  action: (rule) => rule.node = (''+rule.child.node).toUpperCase()
 })
 
-// console.log(j('{<a:1>,b:2}'))
-console.log(j('[<a:1>]'))
-console.log(j('[2,<a:1>]'))
 
+// console.log(j('@a'))
+// console.log(j('[@a]'))
+// console.log(j('[1, @a]'))
+// console.log(j('[1, @a, 2]'))
+// console.log(j('[@a, 2]'))
+// console.log(j('[@a, @b]'))
+// console.log(j('{x:@a}'))
+// console.log(j('{y:1, x:@a}'))
+// console.log(j('{y:1, x:@a, z:2}'))
+// console.log(j('{x:@a, z:2}'))
+
+// console.log(j('[1 @a]'))
+// console.log(j('[1 @a 2]'))
+// console.log(j('[@a 2]'))
+
+// console.log(j('{ y:1 x:@a z:2 }'))
+
+// console.log(j('1 2 @a'))
+// console.log(j('1 @a'))
+// console.log(j('1 @a 2'))
+// console.log(j('@a 2'))
+// console.log(j('@a @b'))
+// console.log(j('@a @b 2'))
+
+
+console.log(j('@a,2'))
+
+// const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
+//   name: 'constant',
+//   open: '@',
+//   rules: {
+//     open: 'val,pair'
+//   },
+//   action: (rule) => {
+//     console.log('DA', rule.d, rule.name, rule.child.node, rule.parent.name)
+//     let from = rule.parent.name
+
+//     if('pair' === from) {
+//       rule.parent.use.pair=true
+//       rule.parent.use.key='@'
+//     }
+    
+//     rule.node = (''+rule.child.node).toUpperCase()
+//   },
+//   custom: (jsonic, {OPEN, name}) => {
+
+//     // Handle special case of @foo first token - assume a map
+//     jsonic
+//       .rule('val', (rs) => {
+// 	rs.open({
+// 	  s: [OPEN],
+// 	  c: (r)=>0===r.d,
+// 	  p: 'map',
+// 	  b: 1,
+// 	  n: { [name+'_top']:1 }
+// 	})
+//       })
+//       .rule('map', (rs) => {
+// 	rs.open({
+// 	  s: [OPEN],
+// 	  c: (r)=> (1===r.d && 1===r.n[name+'_top']),
+// 	  p: 'pair',
+// 	  b: 1,
+// 	})
+//       })
+//   }
+// })
+
+
+// // console.log(j('{x:@a,@b,z:@c}'))
+// // console.log(j('{x:@a @b z:@c}'))
+// // console.log(j('{x:1 @b @c z:2}'))
+// // console.log(j('x:1 @a'))
+// console.log(j('@a x:1'))
+
+
+// const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
+//   name: 'adder',
+//   open: 'add<',
+//   close: '>',
+//   action: (rule) => {
+//     let out = 0
+//     if (Array.isArray(rule.child.node)) {
+//       out = rule.child.node.reduce((a, v) => a + v)
+//     }
+//     rule.node = out
+//   }
+// })
+
+// console.log(j('add<1,2>'))
