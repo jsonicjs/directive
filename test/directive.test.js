@@ -279,5 +279,55 @@ describe('directive', () => {
         });
         expect(() => j('a:@x')).toThrow(/bad.*:1:3/s);
     });
+    test('annotate', () => {
+        let j = jsonic_next_1.Jsonic.make().use(directive_1.Directive, {
+            name: 'annotate',
+            open: '@',
+            rules: {
+                // annotate is a child of val
+                open: 'val'
+            },
+            action: (rule) => {
+                // Set use.note on parent val
+                rule.parent.use.note = '<' + rule.child.node + '>';
+            },
+            custom: (jsonic) => {
+                jsonic
+                    // Replace annotation rule with following actual val rule
+                    .rule('annotate', (rs) => {
+                    rs
+                        .close([
+                        {
+                            r: 'val',
+                            g: 'replace',
+                        }
+                    ])
+                        .ac((rule, _ctx, next) => {
+                        // annotate was the child, make following val the child
+                        // of the parent val (which will adopt node of of a child val)
+                        rule.parent.child = next;
+                    });
+                });
+                jsonic
+                    .rule('val', (rs) => {
+                    rs.bc((r) => {
+                        if (r.use.note) {
+                            r.node['@'] = r.use.note;
+                        }
+                    });
+                });
+            }
+        });
+        expect(j('[@a {x:1}]')).toEqual([{ x: 1, '@': '<a>' }]);
+        expect(j('[{y:2}, @a {x:1}]')).toEqual([{ y: 2 }, { x: 1, '@': '<a>' }]);
+        expect(j('[{y:2}, @a {x:1}, {z:3}]'))
+            .toEqual([{ y: 2 }, { x: 1, '@': '<a>' }, { z: 3 }]);
+        expect(j('{a: @a {x:1}}')).toEqual({ a: { x: 1, '@': '<a>' } });
+        expect(j('{b:{y:1},a: @a {x:1}}'))
+            .toEqual({ b: { y: 1 }, a: { x: 1, '@': '<a>' } });
+        expect(j('{b:{y:1},a: @a {x:1},c:{z:1}}'))
+            .toEqual({ b: { y: 1 }, a: { x: 1, '@': '<a>' }, c: { z: 1 } });
+        expect(j('{a:b: @a {x:1}}')).toEqual({ a: { b: { x: 1, '@': '<a>' } } });
+    });
 });
 //# sourceMappingURL=directive.test.js.map

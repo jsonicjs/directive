@@ -174,7 +174,6 @@ const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
   },
   custom: (jsonic, {OPEN, name}) => {
 
-    // Handle special case of @foo first token - assume a map
     jsonic
       .rule('annotate', (rs) => {
 	rs
