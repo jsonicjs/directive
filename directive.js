@@ -2,8 +2,7 @@
 /* Copyright (c) 2021-2022 Richard Rodger, MIT License */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Directive = void 0;
-const parseList = (list) => ('string' == typeof list ?
-    list.split(/\s*,\s*/) : (list || [])).filter((item) => null != item && '' !== item);
+const parseList = (list) => ('string' == typeof list ? list.split(/\s*,\s*/) : list || []).filter((item) => null != item && '' !== item);
 const Directive = (jsonic, options) => {
     var _a, _b;
     let rules = {
@@ -71,16 +70,14 @@ appear without the start characters "${open}" appearing first:
     // OPEN|CLOSE refers to opening and closing tokens for the directive.
     rules.open.forEach((rulename) => {
         jsonic.rule(rulename, (rs) => {
-            rs
-                .open({
+            rs.open({
                 s: [OPEN],
                 p: name,
                 n: { ['dr_' + name]: 1 },
                 g: 'start',
             });
             if (null != close) {
-                rs
-                    .open({
+                rs.open({
                     s: [OPEN, CLOSE],
                     b: 1,
                     p: name,
@@ -104,13 +101,13 @@ appear without the start characters "${open}" appearing first:
                         s: [CLOSE],
                         c: (r) => 1 === r.n['dr_' + name],
                         b: 1,
-                        g: 'end'
+                        g: 'end',
                     },
                     {
                         s: [CA, CLOSE],
                         c: (r) => 1 === r.n['dr_' + name],
                         b: 1,
-                        g: 'end,comma'
+                        g: 'end,comma',
                     },
                 ]);
             });
@@ -135,11 +132,7 @@ appear without the start characters "${open}" appearing first:
             return out;
         }
     })
-        .close(null != close ? [
-        { s: [CLOSE] },
-        { s: [CA, CLOSE] },
-    ] :
-        []));
+        .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : []));
     if (custom) {
         custom(jsonic, { OPEN, CLOSE, name });
     }
@@ -149,7 +142,7 @@ Directive.defaults = {
     rules: {
         // By default, directives only operate where vals occur.
         open: 'val',
-        close: 'list,elem,map,pair'
-    }
+        close: 'list,elem,map,pair',
+    },
 };
 //# sourceMappingURL=directive.js.map

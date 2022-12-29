@@ -1,7 +1,5 @@
-
 const { Jsonic, Debug } = require('@jsonic/jsonic-next')
 const { Directive } = require('..')
-
 
 // const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
 //   name: 'constant',
@@ -33,7 +31,6 @@ const { Directive } = require('..')
 // console.log(j('@a @b'))
 // console.log(j('@a @b 2'))
 
-
 // console.log(j('@a,2'))
 
 // const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
@@ -50,7 +47,7 @@ const { Directive } = require('..')
 //       rule.parent.use.pair=true
 //       rule.parent.use.key='@'
 //     }
-    
+
 //     rule.node = (''+rule.child.node).toUpperCase()
 //   },
 //   custom: (jsonic, {OPEN, name}) => {
@@ -77,13 +74,11 @@ const { Directive } = require('..')
 //   }
 // })
 
-
 // // console.log(j('{x:@a,@b,z:@c}'))
 // // console.log(j('{x:@a @b z:@c}'))
 // // console.log(j('{x:1 @b @c z:2}'))
 // // console.log(j('x:1 @a'))
 // console.log(j('@a x:1'))
-
 
 // const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
 //   name: 'adder',
@@ -99,7 +94,6 @@ const { Directive } = require('..')
 // })
 
 // console.log(j('add<1,2>'))
-
 
 // const SRC = {
 //   a: 'A',
@@ -118,7 +112,7 @@ const { Directive } = require('..')
 //     let srcname = ''+rule.child.node
 //     let src = SRC[srcname]
 //     let from = rule.parent.name
-    
+
 //     if('pair' === from) {
 //       Object.assign(rule.parent.node, src)
 //     }
@@ -150,7 +144,6 @@ const { Directive } = require('..')
 //   }
 // })
 
-
 // console.log(j('a:@a'))
 // console.log(j('c:@c'))
 // console.log(j('a:@a c:@c'))
@@ -161,43 +154,40 @@ const { Directive } = require('..')
 
 // console.log(j('a:@[1]'))
 
-
-const j = Jsonic.make().use(Debug,{trace:true}).use(Directive, {
-  name: 'annotate',
-  open: '@',
-  rules: {
-    open: 'val'
-  },
-  action: (rule) => {
-    // console.log('DA', rule.d, rule.name, rule.child.node, rule.parent.name)
-    rule.parent.use.note = '<'+rule.child.node+'>'
-  },
-  custom: (jsonic, {OPEN, name}) => {
-
-    jsonic
-      .rule('annotate', (rs) => {
-	rs
-	  .close([
-	    {
-	      r: 'val',
-	      g: 'replace',
-	    }
-	  ])
-	  .ac((r,c,next)=>{
-	    console.log('AC PARENT', r.parent.i, r.parent.name)
-	    console.log('AC NEXT', next.i, next.name)
-	    r.parent.child = next
-	  })
-	  
-      })
-      .rule('val', (rs) => {
-	rs.bc((r)=>{
-	  if(r.use.note) {
-	    r.node['@']=r.use.note 
-	  }
-	})
-      })
-  }
-})
+const j = Jsonic.make()
+  .use(Debug, { trace: true })
+  .use(Directive, {
+    name: 'annotate',
+    open: '@',
+    rules: {
+      open: 'val',
+    },
+    action: (rule) => {
+      // console.log('DA', rule.d, rule.name, rule.child.node, rule.parent.name)
+      rule.parent.use.note = '<' + rule.child.node + '>'
+    },
+    custom: (jsonic, { OPEN, name }) => {
+      jsonic
+        .rule('annotate', (rs) => {
+          rs.close([
+            {
+              r: 'val',
+              g: 'replace',
+            },
+          ]).ac((r, c, next) => {
+            console.log('AC PARENT', r.parent.i, r.parent.name)
+            console.log('AC NEXT', next.i, next.name)
+            r.parent.child = next
+          })
+        })
+        .rule('val', (rs) => {
+          rs.bc((r) => {
+            if (r.use.note) {
+              r.node['@'] = r.use.note
+            }
+          })
+        })
+    },
+  })
 
 console.log(j('[@a {x:1}]'))

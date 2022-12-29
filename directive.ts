@@ -19,17 +19,17 @@ type DirectiveOptions = {
   rules?: {
     open?: string | string[]
     close?: string | string[]
-  },
-  custom?: (jsonic: Jsonic,
-    config: { OPEN: Tin, CLOSE: Tin | null | undefined, name: string }) => void
+  }
+  custom?: (
+    jsonic: Jsonic,
+    config: { OPEN: Tin; CLOSE: Tin | null | undefined; name: string }
+  ) => void
 }
 
-
 const parseList = (list: undefined | string | string[]): string[] =>
-  ('string' == typeof list ?
-    list.split(/\s*,\s*/) : (list || [])
-  ).filter((item) => null != item && '' !== item)
-
+  ('string' == typeof list ? list.split(/\s*,\s*/) : list || []).filter(
+    (item) => null != item && '' !== item
+  )
 
 const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
   let rules = {
@@ -43,7 +43,6 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
   let action: StateAction
   let custom = options.custom
 
-
   if ('string' === typeof options.action) {
     let path = options.action
     action = (rule: Rule) =>
@@ -52,13 +51,12 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
     action = options.action
   }
 
-
   let token: Record<string, string> = {}
 
   let openTN = '#OD_' + name
   let closeTN = '#CD_' + name
 
-  let OPEN: Tin = (jsonic.fixed(open) as Tin)
+  let OPEN: Tin = jsonic.fixed(open) as Tin
   let CLOSE = null == close ? null : jsonic.fixed(close)
 
   // OPEN must be unique
@@ -82,12 +80,12 @@ const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
         null == close
           ? null
           : 'directive ' +
-          name +
-          ' close "' +
-          close +
-          '" without open "' +
-          open +
-          '"',
+            name +
+            ' close "' +
+            close +
+            '" without open "' +
+            open +
+            '"',
     },
     hint: {
       [name + '_close']:
@@ -103,32 +101,29 @@ appear without the start characters "${open}" appearing first:
   })
 
   let CA = jsonic.token.CA
-  OPEN = (jsonic.fixed(open) as Tin)
+  OPEN = jsonic.fixed(open) as Tin
   CLOSE = null == close ? null : jsonic.fixed(close)
 
   // NOTE: RuleSpec.open|close refers to Rule state, whereas
   // OPEN|CLOSE refers to opening and closing tokens for the directive.
 
-
   rules.open.forEach((rulename) => {
     jsonic.rule(rulename, (rs: RuleSpec) => {
-      rs
-        .open({
-          s: [OPEN],
-          p: name,
-          n: { ['dr_' + name]: 1 },
-          g: 'start',
-        })
+      rs.open({
+        s: [OPEN],
+        p: name,
+        n: { ['dr_' + name]: 1 },
+        g: 'start',
+      })
 
       if (null != close) {
-        rs
-          .open({
-            s: [OPEN, CLOSE],
-            b: 1,
-            p: name,
-            n: { ['dr_' + name]: 1 },
-            g: 'start,end',
-          })
+        rs.open({
+          s: [OPEN, CLOSE],
+          b: 1,
+          p: name,
+          n: { ['dr_' + name]: 1 },
+          g: 'start,end',
+        })
 
         rs.close({
           s: [CLOSE],
@@ -141,7 +136,6 @@ appear without the start characters "${open}" appearing first:
     })
   })
 
-
   if (null != close) {
     rules.close.forEach((rulename) => {
       jsonic.rule(rulename, (rs: RuleSpec) => {
@@ -150,19 +144,18 @@ appear without the start characters "${open}" appearing first:
             s: [CLOSE],
             c: (r) => 1 === r.n['dr_' + name],
             b: 1,
-            g: 'end'
+            g: 'end',
           },
           {
             s: [CA, CLOSE],
             c: (r) => 1 === r.n['dr_' + name],
             b: 1,
-            g: 'end,comma'
+            g: 'end,comma',
           },
         ])
       })
     })
   }
-
 
   jsonic.rule(name, (rs) =>
     rs
@@ -179,7 +172,7 @@ appear without the start characters "${open}" appearing first:
           n: null == close ? { dlist: 1, dmap: 1 } : { dlist: 0, dmap: 0 },
         },
       ])
-      .bc(function(
+      .bc(function (
         this: RuleSpec,
         rule: Rule,
         ctx: Context,
@@ -191,25 +184,20 @@ appear without the start characters "${open}" appearing first:
           return out
         }
       })
-      .close(null != close ? [
-        { s: [CLOSE] },
-        { s: [CA, CLOSE] },
-      ] :
-        [])
+      .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : [])
   )
 
   if (custom) {
     custom(jsonic, { OPEN, CLOSE, name })
   }
-
 }
 
 Directive.defaults = {
   rules: {
     // By default, directives only operate where vals occur.
     open: 'val',
-    close: 'list,elem,map,pair'
-  }
+    close: 'list,elem,map,pair',
+  },
 } as DirectiveOptions
 
 export { Directive }

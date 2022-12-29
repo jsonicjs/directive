@@ -1,6 +1,6 @@
 {
   "name": "@jsonic/directive",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "This plugin allows the [Jsonic](https://jsonic.senecajs.org) JSON parser to support directive syntax.",
   "main": "directive.js",
   "type": "commonjs",
@@ -50,7 +50,7 @@
     "typescript": "^4.9.4"
   },
   "peerDependencies": {
-    "@jsonic/jsonic-next": ">=2"
+    "@jsonic/jsonic-next": ">=2.5.4"
   },
   "dependencies": {}
 }
