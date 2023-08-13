@@ -1,8 +1,8 @@
 "use strict";
-/* Copyright (c) 2021-2022 Richard Rodger and other contributors, MIT License */
+/* Copyright (c) 2021-2023 Richard Rodger and other contributors, MIT License */
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsonic_next_1 = require("@jsonic/jsonic-next");
-// import { Debug } from '@jsonic/jsonic-next'
+// import { Debug } from '@jsonic/jsonic-next/debug'
 const directive_1 = require("../directive");
 const clone = (x) => JSON.parse(JSON.stringify(x));
 describe('directive', () => {
@@ -289,7 +289,7 @@ describe('directive', () => {
             },
             action: (rule) => {
                 // Set use.note on parent val
-                rule.parent.use.note = '<' + rule.child.node + '>';
+                rule.parent.u.note = '<' + rule.child.node + '>';
             },
             custom: (jsonic) => {
                 jsonic
@@ -311,8 +311,8 @@ describe('directive', () => {
                 jsonic
                     .rule('val', (rs) => {
                     rs.bc((r) => {
-                        if (r.use.note) {
-                            r.node['@'] = r.use.note;
+                        if (r.u.note) {
+                            r.node['@'] = r.u.note;
                         }
                     });
                 });

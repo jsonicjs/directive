@@ -1,6 +1,6 @@
 {
   "name": "@jsonic/directive",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "This plugin allows the [Jsonic](https://jsonic.senecajs.org) JSON parser to support directive syntax.",
   "main": "directive.js",
   "type": "commonjs",
@@ -27,7 +27,7 @@
     "build": "tsc -d && cp directive.js directive.min.js && browserify -o directive.min.js -e directive.js -s @JsonicDirective -im -i assert -p tinyify",
     "prettier": "prettier --write --no-semi --single-quote *.ts test/*.js",
     "clean": "rm -rf node_modules yarn.lock package-lock.json",
-    "reset": "npm run clean && npm i && npm test",
+    "reset": "npm run clean && npm i && npm run build && npm test",
     "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && echo TAG: v$REPO_VERSION && git commit -a -m v$REPO_VERSION && git push && git tag v$REPO_VERSION && git push --tags;",
     "repo-publish": "npm run clean && npm i && npm run repo-publish-quick",
     "repo-publish-quick": "npm run prettier && npm run build && npm run test && npm run repo-tag && npm publish --access public --registry https://registry.npmjs.org "
@@ -50,7 +50,7 @@
     "typescript": "^5.1.6"
   },
   "peerDependencies": {
-    "@jsonic/jsonic-next": ">=2.10.0"
+    "@jsonic/jsonic-next": ">=2.12.1"
   },
   "dependencies": {}
 }
