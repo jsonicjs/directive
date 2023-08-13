@@ -22,13 +22,13 @@ type DirectiveOptions = {
   }
   custom?: (
     jsonic: Jsonic,
-    config: { OPEN: Tin; CLOSE: Tin | null | undefined; name: string }
+    config: { OPEN: Tin; CLOSE: Tin | null | undefined; name: string },
   ) => void
 }
 
 const parseList = (list: undefined | string | string[]): string[] =>
   ('string' == typeof list ? list.split(/\s*,\s*/) : list || []).filter(
-    (item) => null != item && '' !== item
+    (item) => null != item && '' !== item,
   )
 
 const Directive: Plugin = (jsonic: Jsonic, options: DirectiveOptions) => {
@@ -177,14 +177,14 @@ appear without the start characters "${open}" appearing first:
         rule: Rule,
         ctx: Context,
         next: Rule,
-        tkn?: Token | void
+        tkn?: Token | void,
       ) {
         let out = action.call(this, rule, ctx, next, tkn)
         if (out?.isToken) {
           return out
         }
       })
-      .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : [])
+      .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : []),
   )
 
   if (custom) {
