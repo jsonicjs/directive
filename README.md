@@ -20,7 +20,6 @@ parser to support directive syntax.
 * _rules_
   * _close_: `string` (default: list,elem,map,pair) - close
   * _open_: `string` (default: val) - open
-
 <!--END:options-->
 
 
