@@ -56,10 +56,10 @@ const Directive = (jsonic, options) => {
             [name + '_close']: null == close
                 ? null
                 : `
-The ${name} directive must start with the characters "${open}" and end
-with the characters "${close}". The end characters "${close}" may not
-appear without the start characters "${open}" appearing first:
-"${open}...${close}".
+The {name} directive must start with the characters "{open}" and end
+with the characters "{close}". The end characters "{close}" may not
+appear without the start characters "{open}" appearing first:
+"{open}...{close}".
 `,
         },
     });
