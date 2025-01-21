@@ -1,9 +1,11 @@
-/* Copyright (c) 2021-2023 Richard Rodger and other contributors, MIT License */
+/* Copyright (c) 2021-2024 Richard Rodger and other contributors, MIT License */
 
+import { test, describe } from 'node:test'
+import { expect } from '@hapi/code'
 
-import { Jsonic, Rule } from '@jsonic/jsonic-next'
-// import { Debug } from '@jsonic/jsonic-next/debug'
-import { Directive } from '../directive'
+import { Jsonic, Rule } from 'jsonic'
+import { Debug } from 'jsonic/debug'
+import { Directive } from '../dist/directive'
 
 
 
@@ -21,108 +23,258 @@ describe('directive', () => {
         action: (rule: Rule) => rule.node = ('' + rule.child.node).toUpperCase()
       })
 
-    expect(j.token.OD_upper).toBeDefined()
-    expect(j.rule('upper')).toBeDefined()
+    expect(j.token.OD_upper).exist()
+    expect(j.rule('upper')).exist()
 
-    expect(j('@a')).toEqual('A')
+    expect(j('@a')).equal('A')
 
-    expect(j('[]')).toEqual([])
-    expect(j('[1]')).toEqual([1])
-    expect(j('[1, 2]')).toEqual([1, 2])
-    expect(j('[1, 2, 3]')).toEqual([1, 2, 3])
-    expect(j('[@a]')).toEqual(['A'])
-    expect(j('[1, @a]')).toEqual([1, 'A'])
-    expect(j('[1, 2, @a]')).toEqual([1, 2, 'A'])
-    expect(j('[1, @a, 2]')).toEqual([1, 'A', 2])
-    expect(j('[@a, 2]')).toEqual(['A', 2])
-    expect(j('[@a, 2, 1]')).toEqual(['A', 2, 1])
-    expect(j('[@a, @b]')).toEqual(['A', 'B'])
-    expect(j('[@a, @b, @c]')).toEqual(['A', 'B', 'C'])
-    expect(j('[1, @a, @b]')).toEqual([1, 'A', 'B'])
-    expect(j('[1, @a, 2, @b]')).toEqual([1, 'A', 2, 'B'])
-    expect(j('[1, @a, 2, @b, 3]')).toEqual([1, 'A', 2, 'B', 3])
+    expect(j('[]')).equal([])
+    expect(j('[1]')).equal([1])
+    expect(j('[1, 2]')).equal([1, 2])
+    expect(j('[1, 2, 3]')).equal([1, 2, 3])
+    expect(j('[@a]')).equal(['A'])
+    expect(j('[1, @a]')).equal([1, 'A'])
+    expect(j('[1, 2, @a]')).equal([1, 2, 'A'])
+    expect(j('[1, @a, 2]')).equal([1, 'A', 2])
+    expect(j('[@a, 2]')).equal(['A', 2])
+    expect(j('[@a, 2, 1]')).equal(['A', 2, 1])
+    expect(j('[@a, @b]')).equal(['A', 'B'])
+    expect(j('[@a, @b, @c]')).equal(['A', 'B', 'C'])
+    expect(j('[1, @a, @b]')).equal([1, 'A', 'B'])
+    expect(j('[1, @a, 2, @b]')).equal([1, 'A', 2, 'B'])
+    expect(j('[1, @a, 2, @b, 3]')).equal([1, 'A', 2, 'B', 3])
 
-    expect(j('[1 2]')).toEqual([1, 2])
-    expect(j('[1 2 3]')).toEqual([1, 2, 3])
-    expect(j('[@a]')).toEqual(['A'])
-    expect(j('[1 @a]')).toEqual([1, 'A'])
-    expect(j('[1 2 @a]')).toEqual([1, 2, 'A'])
-    expect(j('[1 @a 2]')).toEqual([1, 'A', 2])
-    expect(j('[@a 2]')).toEqual(['A', 2])
-    expect(j('[@a 2 1]')).toEqual(['A', 2, 1])
-    expect(j('[@a @b]')).toEqual(['A', 'B'])
-    expect(j('[@a @b @c]')).toEqual(['A', 'B', 'C'])
-    expect(j('[1 @a @b]')).toEqual([1, 'A', 'B'])
-    expect(j('[1 @a 2 @b]')).toEqual([1, 'A', 2, 'B'])
-    expect(j('[1 @a 2 @b 3]')).toEqual([1, 'A', 2, 'B', 3])
+    expect(j('[1 2]')).equal([1, 2])
+    expect(j('[1 2 3]')).equal([1, 2, 3])
+    expect(j('[@a]')).equal(['A'])
+    expect(j('[1 @a]')).equal([1, 'A'])
+    expect(j('[1 2 @a]')).equal([1, 2, 'A'])
+    expect(j('[1 @a 2]')).equal([1, 'A', 2])
+    expect(j('[@a 2]')).equal(['A', 2])
+    expect(j('[@a 2 1]')).equal(['A', 2, 1])
+    expect(j('[@a @b]')).equal(['A', 'B'])
+    expect(j('[@a @b @c]')).equal(['A', 'B', 'C'])
+    expect(j('[1 @a @b]')).equal([1, 'A', 'B'])
+    expect(j('[1 @a 2 @b]')).equal([1, 'A', 2, 'B'])
+    expect(j('[1 @a 2 @b 3]')).equal([1, 'A', 2, 'B', 3])
 
-    expect(j('{}')).toEqual({})
+    expect(j('{}')).equal({})
 
-    expect(j('{x:1}')).toEqual({ x: 1 })
-    expect(j('{x:1, y:2}')).toEqual({ x: 1, y: 2 })
-    expect(j('{x:1, y:2, z:3}')).toEqual({ x: 1, y: 2, z: 3 })
-    expect(j('{x:@a}')).toEqual({ x: 'A' })
-    expect(j('{y:1, x:@a}')).toEqual({ y: 1, x: 'A' })
-    expect(j('{y:1, z: 2, x:@a}')).toEqual({ y: 1, z: 2, x: 'A' })
-    expect(j('{y:1, x:@a, z:2}')).toEqual({ y: 1, x: 'A', z: 2 })
-    expect(j('{x:@a, y:1, z: 2}')).toEqual({ x: 'A', y: 1, z: 2 })
-    expect(j('{x:@a, z:2}')).toEqual({ x: 'A', z: 2 })
-    expect(j('{x:@a, y:@b}')).toEqual({ x: 'A', y: 'B' })
-    expect(j('{a:1, x:@a, y:@b}')).toEqual({ a: 1, x: 'A', y: 'B' })
-    expect(j('{a:1, x:@a, b:2, y:@b}')).toEqual({ a: 1, x: 'A', b: 2, y: 'B' })
+    expect(j('{x:1}')).equal({ x: 1 })
+    expect(j('{x:1, y:2}')).equal({ x: 1, y: 2 })
+    expect(j('{x:1, y:2, z:3}')).equal({ x: 1, y: 2, z: 3 })
+    expect(j('{x:@a}')).equal({ x: 'A' })
+    expect(j('{y:1, x:@a}')).equal({ y: 1, x: 'A' })
+    expect(j('{y:1, z: 2, x:@a}')).equal({ y: 1, z: 2, x: 'A' })
+    expect(j('{y:1, x:@a, z:2}')).equal({ y: 1, x: 'A', z: 2 })
+    expect(j('{x:@a, y:1, z: 2}')).equal({ x: 'A', y: 1, z: 2 })
+    expect(j('{x:@a, z:2}')).equal({ x: 'A', z: 2 })
+    expect(j('{x:@a, y:@b}')).equal({ x: 'A', y: 'B' })
+    expect(j('{a:1, x:@a, y:@b}')).equal({ a: 1, x: 'A', y: 'B' })
+    expect(j('{a:1, x:@a, b:2, y:@b}')).equal({ a: 1, x: 'A', b: 2, y: 'B' })
     expect(j('{a:1, x:@a, b:2, y:@b, c: 3}'))
-      .toEqual({ a: 1, x: 'A', b: 2, y: 'B', c: 3 })
+      .equal({ a: 1, x: 'A', b: 2, y: 'B', c: 3 })
 
-    expect(j('{x:1}')).toEqual({ x: 1 })
-    expect(j('{x:1 y:2}')).toEqual({ x: 1, y: 2 })
-    expect(j('{x:1 y:2 z:3}')).toEqual({ x: 1, y: 2, z: 3 })
-    expect(j('{x:@a}')).toEqual({ x: 'A' })
-    expect(j('{y:1 x:@a}')).toEqual({ y: 1, x: 'A' })
-    expect(j('{y:1 z: 2 x:@a}')).toEqual({ y: 1, z: 2, x: 'A' })
-    expect(j('{y:1 x:@a z:2}')).toEqual({ y: 1, x: 'A', z: 2 })
-    expect(j('{x:@a y:1 z: 2}')).toEqual({ x: 'A', y: 1, z: 2 })
-    expect(j('{x:@a z:2}')).toEqual({ x: 'A', z: 2 })
-    expect(j('{x:@a y:@b}')).toEqual({ x: 'A', y: 'B' })
-    expect(j('{a:1 x:@a y:@b}')).toEqual({ a: 1, x: 'A', y: 'B' })
-    expect(j('{a:1 x:@a b:2 y:@b}')).toEqual({ a: 1, x: 'A', b: 2, y: 'B' })
+    expect(j('{x:1}')).equal({ x: 1 })
+    expect(j('{x:1 y:2}')).equal({ x: 1, y: 2 })
+    expect(j('{x:1 y:2 z:3}')).equal({ x: 1, y: 2, z: 3 })
+    expect(j('{x:@a}')).equal({ x: 'A' })
+    expect(j('{y:1 x:@a}')).equal({ y: 1, x: 'A' })
+    expect(j('{y:1 z: 2 x:@a}')).equal({ y: 1, z: 2, x: 'A' })
+    expect(j('{y:1 x:@a z:2}')).equal({ y: 1, x: 'A', z: 2 })
+    expect(j('{x:@a y:1 z: 2}')).equal({ x: 'A', y: 1, z: 2 })
+    expect(j('{x:@a z:2}')).equal({ x: 'A', z: 2 })
+    expect(j('{x:@a y:@b}')).equal({ x: 'A', y: 'B' })
+    expect(j('{a:1 x:@a y:@b}')).equal({ a: 1, x: 'A', y: 'B' })
+    expect(j('{a:1 x:@a b:2 y:@b}')).equal({ a: 1, x: 'A', b: 2, y: 'B' })
     expect(j('{a:1 x:@a b:2 y:@b c: 3}'))
-      .toEqual({ a: 1, x: 'A', b: 2, y: 'B', c: 3 })
+      .equal({ a: 1, x: 'A', b: 2, y: 'B', c: 3 })
 
-    expect(j('1, @a')).toEqual([1, 'A'])
-    expect(j('1, 2, @a')).toEqual([1, 2, 'A'])
-    expect(j('@a, 1')).toEqual(['A', 1])
-    expect(j('@a, 1, 2')).toEqual(['A', 1, 2])
-    expect(j('1, @a, 2')).toEqual([1, 'A', 2])
+    expect(j('1, @a')).equal([1, 'A'])
+    expect(j('1, 2, @a')).equal([1, 2, 'A'])
+    expect(j('@a, 1')).equal(['A', 1])
+    expect(j('@a, 1, 2')).equal(['A', 1, 2])
+    expect(j('1, @a, 2')).equal([1, 'A', 2])
 
-    expect(j('1 @a')).toEqual([1, 'A'])
-    expect(j('1 2 @a')).toEqual([1, 2, 'A'])
-    expect(j('@a 1')).toEqual(['A', 1])
-    expect(j('@a 1 2')).toEqual(['A', 1, 2])
-    expect(j('1 @a 2')).toEqual([1, 'A', 2])
+    expect(j('1 @a')).equal([1, 'A'])
+    expect(j('1 2 @a')).equal([1, 2, 'A'])
+    expect(j('@a 1')).equal(['A', 1])
+    expect(j('@a 1 2')).equal(['A', 1, 2])
+    expect(j('1 @a 2')).equal([1, 'A', 2])
 
-    expect(j('1, @a, @b')).toEqual([1, 'A', 'B'])
-    expect(j('1, 2, @a, @b')).toEqual([1, 2, 'A', 'B'])
-    expect(j('@a, @b, 1')).toEqual(['A', 'B', 1])
-    expect(j('@a, @b, 1, 2')).toEqual(['A', 'B', 1, 2])
-    expect(j('1, @a, @b, 2')).toEqual([1, 'A', 'B', 2])
+    expect(j('1, @a, @b')).equal([1, 'A', 'B'])
+    expect(j('1, 2, @a, @b')).equal([1, 2, 'A', 'B'])
+    expect(j('@a, @b, 1')).equal(['A', 'B', 1])
+    expect(j('@a, @b, 1, 2')).equal(['A', 'B', 1, 2])
+    expect(j('1, @a, @b, 2')).equal([1, 'A', 'B', 2])
 
-    expect(j('1 @a @b')).toEqual([1, 'A', 'B'])
-    expect(j('1 2 @a @b')).toEqual([1, 2, 'A', 'B'])
-    expect(j('@a @b 1')).toEqual(['A', 'B', 1])
-    expect(j('@a @b 1 2')).toEqual(['A', 'B', 1, 2])
-    expect(j('1 @a @b 2')).toEqual([1, 'A', 'B', 2])
+    expect(j('1 @a @b')).equal([1, 'A', 'B'])
+    expect(j('1 2 @a @b')).equal([1, 2, 'A', 'B'])
+    expect(j('@a @b 1')).equal(['A', 'B', 1])
+    expect(j('@a @b 1 2')).equal(['A', 'B', 1, 2])
+    expect(j('1 @a @b 2')).equal([1, 'A', 'B', 2])
 
     // NOTE: does not handle pairs - must be a value
-    expect(() => j('a:1, @a')).toThrow('unexpected')
-    expect(() => j('{a:1, @a}')).toThrow('unexpected')
-    expect(() => j('a:1 @a')).toThrow('unexpected')
-    expect(() => j('{a:1 @a}')).toThrow('unexpected')
+    expect(() => j('a:1, @a')).throws(/unexpected/)
+    expect(() => j('{a:1, @a}')).throws(/unexpected/)
+    expect(() => j('a:1 @a')).throws(/unexpected/)
+    expect(() => j('{a:1 @a}')).throws(/unexpected/)
 
-    expect(clone(j('1, @a, b:2'))).toEqual([1, 'A'])
-    expect(j('1, @a, b:2').b).toEqual(2)
+    expect(clone(j('1, @a, b:2'))).equal([1, 'A'])
+    expect(j('1, @a, b:2').b).equal(2)
   })
 
 
+  test('subobj', () => {
+    const { deep } = Jsonic.util
+
+    const j = Jsonic.make()
+      // .use(Debug, { trace: true })
+      .use(Directive, {
+        name: 'subobj',
+        open: '@',
+        rules: {
+          open: {
+            val: {},
+            pair: {
+              c: (r: Rule) => r.lte('pk')
+            },
+          },
+        },
+        action: (rule: Rule) => {
+          // let from = rule.parent.name
+          let res = { [rule.child.node]: rule.child.node.toUpperCase() }
+
+          // console.log('FROM', from)
+          // console.log('PARENT', rule.parent)
+
+          rule.parent.parent.node = deep(rule.parent.parent.node, res)
+
+          return undefined
+        },
+        custom: (jsonic: Jsonic, { OPEN, name }: any) => {
+          // Handle special case of @foo first token - assume a map
+          jsonic.rule('val', (rs) => {
+            rs.open([
+              {
+                s: [OPEN],
+                c: (r) => 0 < r.n.pk,
+                b: 1,
+                g: name + '_undive',
+              },
+
+              {
+                s: [OPEN],
+                c: (r) => 0 === r.d,
+                p: 'map',
+                b: 1,
+                n: { [name + '_top']: 1 },
+                g: name + '_top',
+              }])
+          })
+
+          jsonic.rule('map', (rs) => {
+            rs.open({
+              s: [OPEN],
+              c: (r) => 1 === r.d && 1 === r.n[name + '_top'],
+              p: 'pair',
+              b: 1,
+              g: name + '_top',
+            }).close({
+              s: [OPEN],
+              c: (r) => 0 < r.n.pk,
+              b: 1,
+              g: name + '_undive',
+            })
+          })
+
+          jsonic.rule('pair', (rs) => {
+            rs.close({
+              s: [OPEN],
+              c: (r) => 0 < r.n.pk,
+              b: 1,
+              g: name + '_undive',
+            })
+          })
+        }
+      })
+
+    expect(j('@a')).equal({ a: 'A' })
+    expect(j('{@a}')).equal({ a: 'A' })
+    expect(j('{@a @b}')).equal({ a: 'A', b: 'B' })
+    expect(j('{x:1 @a @b}')).equal({ x: 1, a: 'A', b: 'B' })
+    expect(j('{@a x:1 @b}')).equal({ x: 1, a: 'A', b: 'B' })
+    expect(j('{@a @b x:1 }')).equal({ x: 1, a: 'A', b: 'B' })
+    expect(j('{x:1 @a y:2 @b}')).equal({ x: 1, y: 2, a: 'A', b: 'B' })
+    expect(j('{@a x:1 @b y:2 }')).equal({ x: 1, y: 2, a: 'A', b: 'B' })
+    expect(j('{@a @b x:1 y:2 }')).equal({ x: 1, y: 2, a: 'A', b: 'B' })
+    expect(j('{x:1 @a y:2 @b z:3}')).equal({ x: 1, y: 2, z: 3, a: 'A', b: 'B' })
+    expect(j('{@a x:1 @b y:2 z:3}')).equal({ x: 1, y: 2, z: 3, a: 'A', b: 'B' })
+    expect(j('{@a @b x:1 y:2 z:3}')).equal({ x: 1, y: 2, z: 3, a: 'A', b: 'B' })
+
+    expect(j('{@a q:1}')).equal({ a: 'A', q: 1 })
+    expect(j('@a q:1')).equal({ a: 'A', q: 1 })
+
+    expect(j('{q:1 @a}')).equal({ q: 1, a: 'A' })
+    expect(j('q:1 @a')).equal({ q: 1, a: 'A' })
+
+    expect(j('{q:1 @a w:2}')).equal({ q: 1, a: 'A', w: 2 })
+    expect(j('q:1 @a w:2')).equal({ q: 1, a: 'A', w: 2 })
+
+    expect(j('@a @b')).equal({ a: 'A', b: 'B' })
+    expect(j('q:1 @a @b')).equal({ q: 1, a: 'A', b: 'B' })
+    expect(j('@a q:1 @b')).equal({ q: 1, a: 'A', b: 'B' })
+    expect(j('@a @b q:1')).equal({ q: 1, a: 'A', b: 'B' })
+    expect(j('q:1 @a w:2 @b')).equal({ q: 1, a: 'A', w: 2, b: 'B' })
+    expect(j('q:1 @a @b w:2')).equal({ q: 1, a: 'A', w: 2, b: 'B' })
+    expect(j('q:1 @a w:2 @b v:3')).equal({ q: 1, a: 'A', w: 2, b: 'B', v: 3 })
+
+    expect(j('x:[] @a')).equal({ x: [], a: 'A' })
+    expect(j('@a x:[]')).equal({ x: [], a: 'A' })
+    expect(j('x:[] @a y:{}')).equal({ x: [], a: 'A', y: {} })
+
+    expect(j('x:{} @a')).equal({ x: {}, a: 'A' })
+    expect(j('@a x:{}')).equal({ x: {}, a: 'A' })
+    expect(j('x:{} @a y:{}')).equal({ x: {}, a: 'A', y: {} })
+
+    expect(j('x:[] @a @b')).equal({ x: [], a: 'A', b: 'B' })
+    expect(j('@a @b x:[]')).equal({ x: [], a: 'A', b: 'B' })
+    expect(j('x:[] @a @b y:{}')).equal({ x: [], a: 'A', b: 'B', y: {} })
+
+    expect(j('x:{} @a @b')).equal({ x: {}, a: 'A', b: 'B' })
+    expect(j('@a @b x:{}')).equal({ x: {}, a: 'A', b: 'B' })
+    expect(j('x:{} @a @b y:{}')).equal({ x: {}, a: 'A', b: 'B', y: {} })
+
+    expect(j('x:[] @a y:{} @b')).equal({ x: [], a: 'A', b: 'B', y: {} })
+    expect(j('@a y:{} @b x:[]')).equal({ x: [], a: 'A', b: 'B', y: {} })
+    expect(j('x:[] @a z:[] @b y:{}')).equal({ x: [], a: 'A', b: 'B', z: [], y: {} })
+
+    expect(j('x:{} @a y:[] @b')).equal({ x: {}, a: 'A', b: 'B', y: [] })
+    expect(j('@a y:[] @b x:{}')).equal({ x: {}, a: 'A', b: 'B', y: [] })
+    expect(j('x:{} @a z:[] @b y:{}')).equal({ x: {}, a: 'A', b: 'B', y: {}, z: [] })
+
+    expect(j('x:y:1 z:2')).equal({ x: { y: 1 }, z: 2 })
+    expect(j('x:y:1 z:2 @a')).equal({ x: { y: 1 }, z: 2, a: 'A' })
+    expect(j('@a x:y:1 z:2')).equal({ x: { y: 1 }, z: 2, a: 'A' })
+    expect(j('x:y:1 @a')).equal({ x: { y: 1 }, a: 'A' })
+
+    expect(j('x:y:{} @a')).equal({ x: { y: {} }, a: 'A' })
+    expect(j('x:y:{} @a z:1')).equal({ x: { y: {} }, a: 'A', z: 1 })
+    expect(j('x:y:{} @a z:k:1')).equal({ x: { y: {} }, a: 'A', z: { k: 1 } })
+    expect(j('x:y:2 @a z:k:1')).equal({ x: { y: 2 }, a: 'A', z: { k: 1 } })
+    expect(j('x:2 @a z:k:1')).equal({ x: 2, a: 'A', z: { k: 1 } })
+
+    expect(j('@a x:y:{}')).equal({ x: { y: {} }, a: 'A' })
+    expect(j('@a x:y:{} z:1')).equal({ x: { y: {} }, a: 'A', z: 1 })
+    expect(j('@a x:y:{} z:k:1')).equal({ x: { y: {} }, a: 'A', z: { k: 1 } })
+
+    expect(j('@a @b x:y:{}')).equal({ x: { y: {} }, a: 'A', b: 'B' })
+    expect(j('@a @b x:y:{} z:1')).equal({ x: { y: {} }, a: 'A', b: 'B', z: 1 })
+    expect(j('@a @b x:y:{} z:k:1')).equal({ x: { y: {} }, a: 'A', b: 'B', z: { k: 1 } })
+
+    expect(j('x:y:{} @a @b')).equal({ x: { y: {} }, a: 'A', b: 'B' })
+    expect(j('@a x:y:{} @b')).equal({ x: { y: {} }, a: 'A', b: 'B' })
+  })
 
 
   test('action-option-prop', () => {
@@ -134,9 +286,8 @@ describe('directive', () => {
       })
     j0.options({ custom: { x: 11 } })
 
-    expect(j0('@')).toEqual(11)
+    expect(j0('@')).equal(11)
   })
-
 
 
   test('close', () => {
@@ -147,25 +298,25 @@ describe('directive', () => {
       action: (rule: Rule) => rule.node = 'FOO',
     })
 
-    expect(j('foo<t>')).toEqual('FOO')
-    expect(j('foo<>')).toEqual('FOO')
+    expect(j('foo<t>')).equal('FOO')
+    expect(j('foo<>')).equal('FOO')
 
-    expect(j('{"a":1}')).toEqual({ a: 1 })
-    expect(j('{"a":foo< a >}')).toEqual({ a: 'FOO' })
-    expect(j('{"a":foo<{x:1}>}')).toEqual({ a: 'FOO' })
-    expect(j('{"a":foo<foo<a>>}')).toEqual({ a: 'FOO' })
+    expect(j('{"a":1}')).equal({ a: 1 })
+    expect(j('{"a":foo< a >}')).equal({ a: 'FOO' })
+    expect(j('{"a":foo<{x:1}>}')).equal({ a: 'FOO' })
+    expect(j('{"a":foo<foo<a>>}')).equal({ a: 'FOO' })
 
-    expect(j('{"a":1,b:foo<b>}')).toEqual({ a: 1, b: 'FOO' })
-    expect(j('{"a":1,b:foo<[2]>}')).toEqual({ a: 1, b: 'FOO' })
+    expect(j('{"a":1,b:foo<b>}')).equal({ a: 1, b: 'FOO' })
+    expect(j('{"a":1,b:foo<[2]>}')).equal({ a: 1, b: 'FOO' })
 
-    expect(j('{"a":[1,foo<b>]}')).toEqual({ a: [1, 'FOO'] })
+    expect(j('{"a":[1,foo<b>]}')).equal({ a: [1, 'FOO'] })
 
 
-    expect(j('a:foo<y:2,>', { xlog: -1 })).toEqual({ a: 'FOO' })
-    // expect(() => j('>')).toThrow(/foo_close/)
-    expect(() => j('>')).toThrow(/unexpected/)
-    // expect(() => j('a:>', { xlog: -1 })).toThrow(/foo_close/)
-    expect(() => j('a:>', { xlog: -1 })).toThrow(/unexpected/)
+    expect(j('a:foo<y:2,>', { xlog: -1 })).equal({ a: 'FOO' })
+    // expect(() => j('>')).throws(/foo_close/)
+    expect(() => j('>')).throws(/unexpected/)
+    // expect(() => j('a:>', { xlog: -1 })).throws(/foo_close/)
+    expect(() => j('a:>', { xlog: -1 })).throws(/unexpected/)
 
 
     const k = j.use(Directive, {
@@ -175,29 +326,29 @@ describe('directive', () => {
       action: (rule: Rule) => rule.node = 'BAR'
     })
 
-    expect(k('{"a":1}')).toEqual({ a: 1 })
-    expect(k('{"a":bar< a >}')).toEqual({ a: 'BAR' })
-    expect(k('{"a":bar<{x:1}>}')).toEqual({ a: 'BAR' })
-    expect(k('{"a":bar<bar<a>>}')).toEqual({ a: 'BAR' })
+    expect(k('{"a":1}')).equal({ a: 1 })
+    expect(k('{"a":bar< a >}')).equal({ a: 'BAR' })
+    expect(k('{"a":bar<{x:1}>}')).equal({ a: 'BAR' })
+    expect(k('{"a":bar<bar<a>>}')).equal({ a: 'BAR' })
 
-    expect(k('{"a":1,b:bar<b>}')).toEqual({ a: 1, b: 'BAR' })
-    expect(k('{"a":1,b:bar<[2]>}')).toEqual({ a: 1, b: 'BAR' })
+    expect(k('{"a":1,b:bar<b>}')).equal({ a: 1, b: 'BAR' })
+    expect(k('{"a":1,b:bar<[2]>}')).equal({ a: 1, b: 'BAR' })
 
-    expect(k('{"a":[1,bar<b>]}')).toEqual({ a: [1, 'BAR'] })
-
-
-    expect(k('{"a":1}')).toEqual({ a: 1 })
-    expect(k('{"a":foo< a >}')).toEqual({ a: 'FOO' })
-    expect(k('{"a":foo<{x:1}>}')).toEqual({ a: 'FOO' })
-    expect(k('{"a":foo<foo<a>>}')).toEqual({ a: 'FOO' })
-
-    expect(k('{"a":1,b:foo<b>}')).toEqual({ a: 1, b: 'FOO' })
-    expect(k('{"a":1,b:foo<[2]>}')).toEqual({ a: 1, b: 'FOO' })
-
-    expect(k('{"a":[1,foo<b>]}')).toEqual({ a: [1, 'FOO'] })
+    expect(k('{"a":[1,bar<b>]}')).equal({ a: [1, 'BAR'] })
 
 
-    expect(k('{"a":foo< a >, b:bar<>}')).toEqual({ a: 'FOO', b: 'BAR' })
+    expect(k('{"a":1}')).equal({ a: 1 })
+    expect(k('{"a":foo< a >}')).equal({ a: 'FOO' })
+    expect(k('{"a":foo<{x:1}>}')).equal({ a: 'FOO' })
+    expect(k('{"a":foo<foo<a>>}')).equal({ a: 'FOO' })
+
+    expect(k('{"a":1,b:foo<b>}')).equal({ a: 1, b: 'FOO' })
+    expect(k('{"a":1,b:foo<[2]>}')).equal({ a: 1, b: 'FOO' })
+
+    expect(k('{"a":[1,foo<b>]}')).equal({ a: [1, 'FOO'] })
+
+
+    expect(k('{"a":foo< a >, b:bar<>}')).equal({ a: 'FOO', b: 'BAR' })
 
 
     expect(() =>
@@ -206,7 +357,7 @@ describe('directive', () => {
         open: 'bar<',
         action: () => null
       })
-    ).toThrow(/bar</)
+    ).throws(/bar</)
 
   })
 
@@ -267,28 +418,28 @@ describe('directive', () => {
     })
 
 
-    expect(j('a:@z')).toEqual({ a: null })
+    expect(j('a:@z')).equal({ a: null })
 
-    expect(j('a:@a')).toEqual({ a: 'A' })
-    expect(j('a:b:@a')).toEqual({ a: { b: 'A' } })
+    expect(j('a:@a')).equal({ a: 'A' })
+    expect(j('a:b:@a')).equal({ a: { b: 'A' } })
 
-    expect(j('b:@b')).toEqual({ b: { b: 1 } })
-    expect(j('b:a:@b')).toEqual({ b: { a: { b: 1 } } })
+    expect(j('b:@b')).equal({ b: { b: 1 } })
+    expect(j('b:a:@b')).equal({ b: { a: { b: 1 } } })
 
-    expect(j('c:@c')).toEqual({ c: [2, 3] })
-    expect(j('c:b:@c')).toEqual({ c: { b: [2, 3] } })
+    expect(j('c:@c')).equal({ c: [2, 3] })
+    expect(j('c:b:@c')).equal({ c: { b: [2, 3] } })
 
-    expect(j('a:1 @b')).toEqual({ a: 1, b: 1 })
-    expect(j('a:1 @b c:2')).toEqual({ a: 1, b: 1, c: 2 })
-    expect(j('a:@a @b c:@c')).toEqual({ a: 'A', b: 1, c: [2, 3] })
+    expect(j('a:1 @b')).equal({ a: 1, b: 1 })
+    expect(j('a:1 @b c:2')).equal({ a: 1, b: 1, c: 2 })
+    expect(j('a:@a @b c:@c')).equal({ a: 'A', b: 1, c: [2, 3] })
 
     // NOTE: assumes map at top level
-    expect(j('@a')).toEqual({ 0: 'A' })
-    expect(j('@b')).toEqual({ b: 1 })
-    expect(j('@c')).toEqual({ 0: 2, 1: 3 })
+    expect(j('@a')).equal({ 0: 'A' })
+    expect(j('@b')).equal({ b: 1 })
+    expect(j('@c')).equal({ 0: 2, 1: 3 })
 
-    expect(j('@b x:1')).toEqual({ b: 1, x: 1 })
-    expect(j('@b x:1 @bb')).toEqual({ b: 1, x: 1, bb: 1 })
+    expect(j('@b x:1')).equal({ b: 1, x: 1 })
+    expect(j('@b x:1 @bb')).equal({ b: 1, x: 1, bb: 1 })
   })
 
 
@@ -306,9 +457,9 @@ describe('directive', () => {
       }
     })
 
-    expect(j('add<1,2>')).toEqual(3)
-    expect(j('a:add<1,2>')).toEqual({ a: 3 })
-    expect(j('[add<a,b>]')).toEqual(['ab'])
+    expect(j('add<1,2>')).equal(3)
+    expect(j('a:add<1,2>')).equal({ a: 3 })
+    expect(j('[add<a,b>]')).equal(['ab'])
 
 
     const k = j.use(Directive, {
@@ -324,13 +475,13 @@ describe('directive', () => {
       }
     })
 
-    expect(k('mul<2,3>')).toEqual(6)
-    expect(k('a:mul<2,3>')).toEqual({ a: 6 })
-    expect(k('[mul<a,1>]')).toEqual([NaN])
+    expect(k('mul<2,3>')).equal(6)
+    expect(k('a:mul<2,3>')).equal({ a: 6 })
+    expect(k('[mul<a,1>]')).equal([NaN])
 
-    expect(j('add<1,2>')).toEqual(3)
-    expect(j('a:add<1,2>')).toEqual({ a: 3 })
-    expect(j('[add<a,b>]')).toEqual(['ab'])
+    expect(j('add<1,2>')).equal(3)
+    expect(j('a:add<1,2>')).equal({ a: 3 })
+    expect(j('[add<a,b>]')).equal(['ab'])
 
   })
 
@@ -342,7 +493,7 @@ describe('directive', () => {
       action: () => null,
       rules: null,
     })
-    expect(() => j('a:@x')).toThrow('unexpected')
+    expect(() => j('a:@x')).throws(/unexpected/)
   })
 
 
@@ -354,7 +505,7 @@ describe('directive', () => {
         return rule.parent?.o0.bad('bad')
       }
     })
-    expect(() => j('a:@x')).toThrow(/bad.*:1:3/s)
+    expect(() => j('a:@x')).throws(/bad.*:1:3/s)
   })
 
 
@@ -401,18 +552,18 @@ describe('directive', () => {
       }
     })
 
-    expect(j('[@a {x:1}]')).toEqual([{ x: 1, '@': '<a>' }])
-    expect(j('[{y:2}, @a {x:1}]')).toEqual([{ y: 2 }, { x: 1, '@': '<a>' }])
+    expect(j('[@a {x:1}]')).equal([{ x: 1, '@': '<a>' }])
+    expect(j('[{y:2}, @a {x:1}]')).equal([{ y: 2 }, { x: 1, '@': '<a>' }])
     expect(j('[{y:2}, @a {x:1}, {z:3}]'))
-      .toEqual([{ y: 2 }, { x: 1, '@': '<a>' }, { z: 3 }])
+      .equal([{ y: 2 }, { x: 1, '@': '<a>' }, { z: 3 }])
 
-    expect(j('{a: @a {x:1}}')).toEqual({ a: { x: 1, '@': '<a>' } })
+    expect(j('{a: @a {x:1}}')).equal({ a: { x: 1, '@': '<a>' } })
     expect(j('{b:{y:1},a: @a {x:1}}'))
-      .toEqual({ b: { y: 1 }, a: { x: 1, '@': '<a>' } })
+      .equal({ b: { y: 1 }, a: { x: 1, '@': '<a>' } })
     expect(j('{b:{y:1},a: @a {x:1},c:{z:1}}'))
-      .toEqual({ b: { y: 1 }, a: { x: 1, '@': '<a>' }, c: { z: 1 } })
+      .equal({ b: { y: 1 }, a: { x: 1, '@': '<a>' }, c: { z: 1 } })
 
-    expect(j('{a:b: @a {x:1}}')).toEqual({ a: { b: { x: 1, '@': '<a>' } } })
+    expect(j('{a:b: @a {x:1}}')).equal({ a: { b: { x: 1, '@': '<a>' } } })
   })
 
 
