@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2024 Richard Rodger and other contributors, MIT License */
+/* Copyright (c) 2021-2025 Richard Rodger and other contributors, MIT License */
 
 import { test, describe } from 'node:test'
 import { expect } from '@hapi/code'

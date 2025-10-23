@@ -1,6 +1,6 @@
 {
   "name": "@jsonic/directive",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "This plugin allows the [Jsonic](https://jsonic.senecajs.org) JSON parser to support directive syntax.",
   "main": "dist/directive.js",
   "type": "commonjs",
@@ -18,9 +18,8 @@
     "url": "git://github.com/jsonicjs/directive.git"
   },
   "scripts": {
-    "test": "node --enable-source-maps --test dist-test",
-    "test22": "node --enable-source-maps --test \"dist-test/*.test.js\"",
-    "test-some": "node --enable-source-maps --test-name-pattern=\"$npm_config_pattern\" --test dist-test",
+    "test": "node --enable-source-maps --test \"dist-test/*.test.js\"",
+    "test-some": "node --enable-source-maps --test-name-pattern=\"$npm_config_pattern\" --test \"dist-test/*.test.js\"",
     "watch": "tsc --build src test -w",
     "build": "tsc --build src test",
     "clean": "rm -rf dist dist-test node_modules yarn.lock package-lock.json",
@@ -39,11 +38,11 @@
   "devDependencies": {
     "@hapi/code": "^9.0.3",
     "@jsonic/doc": "^0.0.9",
-    "@types/node": "22.10.7",
-    "typescript": "^5.7.3"
+    "@types/node": "24.9.1",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "jsonic": ">=2.16.0"
+    "jsonic": ">=2"
   },
   "dependencies": {}
 }
