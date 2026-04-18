@@ -134,7 +134,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
                             s: [OPEN],
                             c: (r) => 0 < r.n.pk,
                             b: 1,
-                            g: name + '_undive',
+                            g: name + '-undive',
                         },
                         {
                             s: [OPEN],
@@ -142,7 +142,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
                             p: 'map',
                             b: 1,
                             n: { [name + '_top']: 1 },
-                            g: name + '_top',
+                            g: name + '-top',
                         }
                     ]);
                 });
@@ -152,12 +152,12 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
                         c: (r) => 1 === r.d && 1 === r.n[name + '_top'],
                         p: 'pair',
                         b: 1,
-                        g: name + '_top',
+                        g: name + '-top',
                     }).close({
                         s: [OPEN],
                         c: (r) => 0 < r.n.pk,
                         b: 1,
-                        g: name + '_undive',
+                        g: name + '-undive',
                     });
                 });
                 jsonic.rule('pair', (rs) => {
@@ -165,7 +165,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
                         s: [OPEN],
                         c: (r) => 0 < r.n.pk,
                         b: 1,
-                        g: name + '_undive',
+                        g: name + '-undive',
                     });
                 });
             }
