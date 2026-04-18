@@ -11,7 +11,7 @@ import (
 // Directive is a jsonic plugin that adds directive syntax support.
 // A directive defines a custom token sequence (open and optional close)
 // that triggers an action callback to transform the parsed content.
-func Directive(j *jsonic.Jsonic, pluginOpts map[string]any) {
+func Directive(j *jsonic.Jsonic, pluginOpts map[string]any) error {
 	opts := extractOptions(pluginOpts)
 
 	// Resolve rules: nil means use defaults.
@@ -222,4 +222,6 @@ func Directive(j *jsonic.Jsonic, pluginOpts map[string]any) {
 			Name:  name,
 		})
 	}
+
+	return nil
 }
