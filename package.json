@@ -39,10 +39,10 @@
     "@hapi/code": "^9.0.3",
     "@jsonic/doc": "^0.0.9",
     "@types/node": "25.5.0",
+    "jsonic": "github:jsonicjs/jsonic",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "jsonic": ">=2"
-  },
-  "dependencies": {}
+  }
 }

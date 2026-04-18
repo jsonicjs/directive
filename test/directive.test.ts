@@ -160,7 +160,7 @@ describe('directive', () => {
                 s: [OPEN],
                 c: (r) => 0 < r.n.pk,
                 b: 1,
-                g: name + '_undive',
+                g: name + '-undive',
               },
 
               {
@@ -169,7 +169,7 @@ describe('directive', () => {
                 p: 'map',
                 b: 1,
                 n: { [name + '_top']: 1 },
-                g: name + '_top',
+                g: name + '-top',
               }])
           })
 
@@ -179,12 +179,12 @@ describe('directive', () => {
               c: (r) => 1 === r.d && 1 === r.n[name + '_top'],
               p: 'pair',
               b: 1,
-              g: name + '_top',
+              g: name + '-top',
             }).close({
               s: [OPEN],
               c: (r) => 0 < r.n.pk,
               b: 1,
-              g: name + '_undive',
+              g: name + '-undive',
             })
           })
 
@@ -193,7 +193,7 @@ describe('directive', () => {
               s: [OPEN],
               c: (r) => 0 < r.n.pk,
               b: 1,
-              g: name + '_undive',
+              g: name + '-undive',
             })
           })
         }
