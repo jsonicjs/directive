@@ -125,74 +125,13 @@ appear without the start characters "{open}" appearing first:
   // NOTE: RuleSpec.open|close refers to Rule state, whereas
   // OPEN|CLOSE refers to opening and closing tokens for the directive.
 
-  Object.entries(rules.open).forEach((entry: any[]) => {
-    const [rulename, rulespec] = entry
-    jsonic.rule(rulename, (rs: RuleSpec) => {
-      rs.open({
-        s: [OPEN],
-        p: name,
-        n: { ['dr_' + name]: 1 },
-        g: 'start',
-        c: rulespec.c,
-      })
-
-      if (null != close) {
-        rs.open({
-          s: [OPEN, CLOSE],
-          b: 1,
-          p: name,
-          n: { ['dr_' + name]: 1 },
-          g: 'start,end',
-        })
-
-        rs.close({
-          s: [CLOSE],
-          b: 1,
-          g: 'end',
-        })
-      }
-
-      return rs
-    })
-  })
-
-  if (null != close) {
-    Object.entries(rules.close).forEach((entry: any[]) => {
-      const [rulename, rulespec] = entry
-      jsonic.rule(rulename, (rs: RuleSpec) => {
-        rs.close([
-          {
-            s: [CLOSE],
-            c: (r, ctx) => 1 === r.n['dr_' + name] && (rulespec.c ? rulespec.c(r, ctx) : true),
-            b: 1,
-            g: 'end',
-          },
-          {
-            s: [CA, CLOSE],
-            c: (r) => 1 === r.n['dr_' + name],
-            b: 1,
-            g: 'end,comma',
-          },
-        ])
-      })
-    })
-  }
-
+  // Pre-seed the directive rule's hooks (clear existing alts, set bo/bc).
+  // `grammar()` below will then install the open/close alts with the
+  // `directive` group tag appended via the setting arg.
   jsonic.rule(name, (rs) =>
     rs
       .clear()
       .bo((rule: Rule) => ((rule.node = {}), undefined))
-      .open([
-        null != close ? { s: [CLOSE], b: 1 } : null,
-        {
-          p: 'val',
-
-          // Only accept implicits when there is a CLOSE token,
-          // otherwise we'll eat all following siblings.
-          // n: null == close ? {} : { pk: -1, il: 0 },
-          n: null == close ? { dlist: 1, dmap: 1 } : { dlist: 0, dmap: 0 },
-        },
-      ])
       .bc(function(
         this: RuleSpec,
         rule: Rule,
@@ -204,9 +143,86 @@ appear without the start characters "{open}" appearing first:
         if (out?.isToken) {
           return out
         }
-      })
-      .close(null != close ? [{ s: [CLOSE] }, { s: [CA, CLOSE] }] : []),
+      }),
   )
+
+  // Build a declarative grammar spec covering every rule modification
+  // plus the directive rule's own alts.
+  const grammarSpec: any = { rule: {} }
+  const ruleFor = (rn: string) =>
+    (grammarSpec.rule[rn] = grammarSpec.rule[rn] || {})
+
+  Object.entries(rules.open).forEach((entry: any[]) => {
+    const [rulename, rulespec] = entry
+    const openAlts: any[] = []
+    const closeAlts: any[] = []
+    if (null != close) {
+      // More-specific OPEN+CLOSE alt first so it's tried before OPEN alone.
+      openAlts.push({
+        s: [OPEN, CLOSE],
+        b: 1,
+        p: name,
+        n: { ['dr_' + name]: 1 },
+        g: 'start,end',
+      })
+      closeAlts.push({
+        s: [CLOSE],
+        b: 1,
+        g: 'end',
+      })
+    }
+    openAlts.push({
+      s: [OPEN],
+      p: name,
+      n: { ['dr_' + name]: 1 },
+      g: 'start',
+      c: rulespec.c,
+    })
+    const r = ruleFor(rulename)
+    r.open = openAlts
+    if (closeAlts.length) r.close = closeAlts
+  })
+
+  if (null != close) {
+    Object.entries(rules.close).forEach((entry: any[]) => {
+      const [rulename, rulespec] = entry
+      const r = ruleFor(rulename)
+      r.close = [
+        {
+          s: [CLOSE],
+          c: (r: Rule, ctx: Context) =>
+            1 === r.n['dr_' + name] &&
+            (rulespec.c ? rulespec.c(r, ctx) : true),
+          b: 1,
+          g: 'end',
+        },
+        {
+          s: [CA, CLOSE],
+          c: (r: Rule) => 1 === r.n['dr_' + name],
+          b: 1,
+          g: 'end,comma',
+        },
+      ]
+    })
+  }
+
+  const directiveOpenAlts: any[] = []
+  if (null != close) {
+    directiveOpenAlts.push({ s: [CLOSE], b: 1 })
+  }
+  directiveOpenAlts.push({
+    p: 'val',
+    // Only accept implicits when there is a CLOSE token,
+    // otherwise we'll eat all following siblings.
+    n: null == close ? { dlist: 1, dmap: 1 } : { dlist: 0, dmap: 0 },
+  })
+  const dr = ruleFor(name)
+  dr.open = directiveOpenAlts
+  if (null != close) {
+    dr.close = [{ s: [CLOSE] }, { s: [CA, CLOSE] }]
+  }
+
+  jsonic.grammar(grammarSpec, { rule: { alt: { g: 'directive' } } })
 
   if (custom) {
     custom(jsonic, { OPEN, CLOSE, name })
