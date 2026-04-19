@@ -44,142 +44,32 @@ func Directive(j *jsonic.Jsonic, pluginOpts map[string]any) error {
 
 	// Register or look up the close fixed token.
 	var CLOSE jsonic.Tin = -1
+	closeTN := ""
 	if hasClose {
-		closeTN := "#CD_" + name
 		if existing, exists := cfg.FixedTokens[close_]; exists {
+			// Reuse an existing close token (e.g. shared with another
+			// directive). Grab its registered name so the grammar spec
+			// below resolves to the same Tin via j.Token(name).
 			CLOSE = existing
+			closeTN = j.TinName(existing)
 		} else {
+			closeTN = "#CD_" + name
 			CLOSE = j.Token(closeTN, close_)
 		}
 	}
 
-	// Look up the comma token for close-with-comma alternatives.
-	CA := j.Token("#CA")
+	// Build a Ref map for all state actions and condition functions
+	// referenced by the grammar spec below.
+	ref := map[jsonic.FuncRef]any{}
 
-	// ---- Modify existing rules for OPEN token detection ----
-
-	for rulename, rulemod := range openRules {
-		rm := rulemod
-		dn := name
-		j.Rule(rulename, func(rs *jsonic.RuleSpec) {
-			// Match OPEN token → push to directive rule.
-			openAlt := &jsonic.AltSpec{
-				S: [][]jsonic.Tin{{OPEN}},
-				P: dn,
-				N: map[string]int{"dr_" + dn: 1},
-				G: "start",
-			}
-			if rm.C != nil {
-				openAlt.C = rm.C
-			}
-
-			if hasClose {
-				// Also match OPEN+CLOSE (empty directive).
-				emptyAlt := &jsonic.AltSpec{
-					S: [][]jsonic.Tin{{OPEN}, {CLOSE}},
-					B: 1,
-					P: dn,
-					N: map[string]int{"dr_" + dn: 1},
-					G: "start,end",
-				}
-
-				// Prepend close detection to this rule.
-				closeAlt := &jsonic.AltSpec{
-					S: [][]jsonic.Tin{{CLOSE}},
-					B: 1,
-					G: "end",
-				}
-
-				// OPEN+CLOSE must be checked before OPEN alone.
-				rs.PrependOpen(openAlt)
-				rs.PrependOpen(emptyAlt)
-				rs.PrependClose(closeAlt)
-			} else {
-				rs.PrependOpen(openAlt)
-			}
-		})
-	}
-
-	// ---- Modify existing rules for CLOSE token detection ----
-
-	if hasClose {
-		for rulename, rulemod := range closeRules {
-			rm := rulemod
-			dn := name
-			j.Rule(rulename, func(rs *jsonic.RuleSpec) {
-				// CLOSE token ends the directive content.
-				closeAlt := &jsonic.AltSpec{
-					S: [][]jsonic.Tin{{CLOSE}},
-					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
-						if r.N["dr_"+dn] != 1 {
-							return false
-						}
-						if rm.C != nil {
-							return rm.C(r, ctx)
-						}
-						return true
-					},
-					B: 1,
-					G: "end",
-				}
-
-				// COMMA + CLOSE also ends the directive.
-				commaCloseAlt := &jsonic.AltSpec{
-					S: [][]jsonic.Tin{{CA}, {CLOSE}},
-					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
-						return r.N["dr_"+dn] == 1
-					},
-					B: 1,
-					G: "end,comma",
-				}
-
-				rs.PrependClose(closeAlt, commaCloseAlt)
-			})
-		}
-	}
-
-	// ---- Create the directive rule ----
-
-	j.Rule(name, func(rs *jsonic.RuleSpec) {
-		rs.Clear()
-
-		// Before open: initialize node as empty map.
-		rs.AddBO(func(r *jsonic.Rule, ctx *jsonic.Context) {
+	// Auto-wired state actions on the directive rule (@<name>-bo, @<name>-bc).
+	ref[jsonic.FuncRef("@"+name+"-bo")] = jsonic.StateAction(
+		func(r *jsonic.Rule, ctx *jsonic.Context) {
 			r.Node = make(map[string]any)
-		})
-
-		// Open alternatives.
-		openAlts := make([]*jsonic.AltSpec, 0, 2)
-
-		// If close token exists, check for immediate close (empty directive).
-		if hasClose {
-			openAlts = append(openAlts, &jsonic.AltSpec{
-				S: [][]jsonic.Tin{{CLOSE}},
-				B: 1,
-			})
-		}
-
-		// Push to val rule to parse directive content.
-		// Counter settings control implicit list/map creation:
-		//   With close: reset counters (allow implicits within boundaries)
-		//   Without close: increment counters (prevent implicits consuming siblings)
-		counters := map[string]int{}
-		if hasClose {
-			counters["dlist"] = 0
-			counters["dmap"] = 0
-		} else {
-			counters["dlist"] = 1
-			counters["dmap"] = 1
-		}
-		openAlts = append(openAlts, &jsonic.AltSpec{
-			P: "val",
-			N: counters,
-		})
-
-		rs.Open = openAlts
-
-		// Before close: resolve the child node and invoke the action.
-		rs.AddBC(func(r *jsonic.Rule, ctx *jsonic.Context) {
+		},
+	)
+	ref[jsonic.FuncRef("@"+name+"-bc")] = jsonic.StateAction(
+		func(r *jsonic.Rule, ctx *jsonic.Context) {
 			// Follow the replacement chain to get the final child node.
 			// When a val rule is replaced by a list rule (implicit list),
 			// the original child's Node may be stale in Go because slice
@@ -198,16 +88,171 @@ func Directive(j *jsonic.Jsonic, pluginOpts map[string]any) error {
 			if action != nil {
 				action(r, ctx)
 			}
-		})
+		},
+	)
 
-		// Close alternatives (only if close token exists).
-		if hasClose {
-			rs.Close = []*jsonic.AltSpec{
-				{S: [][]jsonic.Tin{{CLOSE}}},
-				{S: [][]jsonic.Tin{{CA}, {CLOSE}}},
-			}
+	// Declarative grammar spec built up below and applied via j.Grammar().
+	gs := &jsonic.GrammarSpec{
+		Ref:  ref,
+		Rule: map[string]*jsonic.GrammarRuleSpec{},
+	}
+	ruleFor := func(rn string) *jsonic.GrammarRuleSpec {
+		if existing, ok := gs.Rule[rn]; ok {
+			return existing
 		}
+		r := &jsonic.GrammarRuleSpec{}
+		gs.Rule[rn] = r
+		return r
+	}
+
+	// ---- Modify existing rules for OPEN token detection ----
+
+	for rulename, rulemod := range openRules {
+		rn := rulename
+		rm := rulemod
+
+		var openAlts []*jsonic.GrammarAltSpec
+		var closeAlts []*jsonic.GrammarAltSpec
+
+		if hasClose {
+			// OPEN+CLOSE (empty directive) must be tried before OPEN alone.
+			openAlts = append(openAlts, &jsonic.GrammarAltSpec{
+				S: openTN + " " + closeTN,
+				B: 1,
+				P: name,
+				N: map[string]int{"dr_" + name: 1},
+				G: "start,end",
+			})
+			closeAlts = append(closeAlts, &jsonic.GrammarAltSpec{
+				S: closeTN,
+				B: 1,
+				G: "end",
+			})
+		}
+
+		openAlt := &jsonic.GrammarAltSpec{
+			S: openTN,
+			P: name,
+			N: map[string]int{"dr_" + name: 1},
+			G: "start",
+		}
+		if rm.C != nil {
+			cref := jsonic.FuncRef("@dr-open-c-" + name + "-" + rn)
+			ref[cref] = rm.C
+			openAlt.C = string(cref)
+		}
+		openAlts = append(openAlts, openAlt)
+
+		r := ruleFor(rn)
+		r.Open = openAlts
+		if len(closeAlts) > 0 {
+			r.Close = closeAlts
+		}
+	}
+
+	// ---- Modify existing rules for CLOSE token detection ----
+
+	if hasClose {
+		for rulename, rulemod := range closeRules {
+			rn := rulename
+			rm := rulemod
+
+			closeCRef := jsonic.FuncRef("@dr-close-c-" + name + "-" + rn)
+			ref[closeCRef] = jsonic.AltCond(
+				func(r *jsonic.Rule, ctx *jsonic.Context) bool {
+					if r.N["dr_"+name] != 1 {
+						return false
+					}
+					if rm.C != nil {
+						return rm.C(r, ctx)
+					}
+					return true
+				},
+			)
+			commaCRef := jsonic.FuncRef("@dr-close-ca-c-" + name + "-" + rn)
+			ref[commaCRef] = jsonic.AltCond(
+				func(r *jsonic.Rule, ctx *jsonic.Context) bool {
+					return r.N["dr_"+name] == 1
+				},
+			)
+
+			closeAlts := []*jsonic.GrammarAltSpec{
+				{
+					S: closeTN,
+					C: string(closeCRef),
+					B: 1,
+					G: "end",
+				},
+				{
+					S: "#CA " + closeTN,
+					C: string(commaCRef),
+					B: 1,
+					G: "end,comma",
+				},
+			}
+
+			r := ruleFor(rn)
+			r.Close = closeAlts
+		}
+	}
+
+	// ---- Directive rule alts ----
+
+	var dirOpen []*jsonic.GrammarAltSpec
+	if hasClose {
+		// Check for immediate close (empty directive).
+		dirOpen = append(dirOpen, &jsonic.GrammarAltSpec{
+			S: closeTN,
+			B: 1,
+		})
+	}
+	// Push to val rule to parse directive content.
+	// Counter settings control implicit list/map creation:
+	//   With close: reset counters (allow implicits within boundaries)
+	//   Without close: increment counters (prevent implicits consuming siblings)
+	counters := map[string]int{}
+	if hasClose {
+		counters["dlist"] = 0
+		counters["dmap"] = 0
+	} else {
+		counters["dlist"] = 1
+		counters["dmap"] = 1
+	}
+	dirOpen = append(dirOpen, &jsonic.GrammarAltSpec{
+		P: "val",
+		N: counters,
 	})
+
+	var dirClose []*jsonic.GrammarAltSpec
+	if hasClose {
+		dirClose = []*jsonic.GrammarAltSpec{
+			{S: closeTN},
+			{S: "#CA " + closeTN},
+		}
+	}
+
+	dr := ruleFor(name)
+	dr.Open = dirOpen
+	if len(dirClose) > 0 {
+		dr.Close = dirClose
+	}
+
+	// Clear any pre-existing alts/state actions on the directive rule so
+	// that j.Grammar() below installs a clean set via wireStateActions +
+	// prepend onto empty slices.
+	j.Rule(name, func(rs *jsonic.RuleSpec) {
+		rs.Clear()
+	})
+
+	// Apply grammar with 'directive' group tag appended to every alt.
+	setting := &jsonic.GrammarSetting{
+		Rule: &jsonic.GrammarSettingRule{
+			Alt: &jsonic.GrammarSettingAlt{G: "directive"},
+		},
+	}
+	if err := j.Grammar(gs, setting); err != nil {
+		return err
+	}
 
 	// ---- Custom callback ----
 
