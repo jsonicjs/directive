@@ -1,12 +1,30 @@
 /* Copyright (c) 2021-2025 Richard Rodger and other contributors, MIT License */
 
 import { test, describe } from 'node:test'
-import { expect } from '@hapi/code'
+import assert from 'node:assert'
 
 import { Jsonic, Rule } from 'jsonic'
 import { Debug } from 'jsonic/debug'
 import { Directive } from '../dist/directive'
 
+
+// Minimal hapi/code-style shim over node:assert.
+// Supports the .equal/.exist/.throws fluent methods used in these tests.
+// Jsonic produces null-prototype objects; normalize both sides so
+// deepStrictEqual's prototype check doesn't spuriously fail.
+const normalize = (v: any): any => {
+  if (v === null || typeof v !== 'object') return v
+  if (Array.isArray(v)) return v.map(normalize)
+  const out: Record<string, any> = {}
+  for (const k of Object.keys(v)) out[k] = normalize(v[k])
+  return out
+}
+const expect = (actual: any) => ({
+  equal: (expected: any) =>
+    assert.deepStrictEqual(normalize(actual), normalize(expected)),
+  exist: () => assert.ok(actual != null),
+  throws: (matcher: RegExp) => assert.throws(actual, matcher),
+})
 
 
 const clone = (x: any) => JSON.parse(JSON.stringify(x))
