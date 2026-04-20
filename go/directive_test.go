@@ -3,40 +3,137 @@
 package directive
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
 	jsonic "github.com/jsonicjs/jsonic/go"
 )
 
-// assert is a test helper that checks deep equality.
-func assert(t *testing.T, name string, got, want any) {
-	t.Helper()
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("%s:\n  got:  %#v\n  want: %#v", name, got, want)
-	}
+// --- TSV spec loader ---
+// Format:
+//   <input>\t<expected-json>
+//   <input>\t!error <regex>
+// Blank lines and lines starting with # are ignored.
+
+type specCase struct {
+	Input    string
+	Expected string
 }
 
-// mustParse parses and fatals on error.
-func mustParse(t *testing.T, j *jsonic.Jsonic, src string) any {
+func loadSpec(t *testing.T, name string) []specCase {
 	t.Helper()
-	result, err := j.Parse(src)
+	p := filepath.Join("..", "test", "spec", name)
+	f, err := os.Open(p)
 	if err != nil {
-		t.Fatalf("Parse(%q) error: %v", src, err)
+		t.Fatalf("open %s: %v", p, err)
 	}
-	return result
+	defer f.Close()
+
+	var cases []specCase
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		i := strings.Index(line, "\t")
+		if i < 0 {
+			continue
+		}
+		cases = append(cases, specCase{
+			Input:    line[:i],
+			Expected: line[i+1:],
+		})
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("scan %s: %v", p, err)
+	}
+	return cases
 }
 
-// mustError parses and expects an error.
-func mustError(t *testing.T, j *jsonic.Jsonic, src string) {
+// numberToFloat64 recursively converts json.Number values to float64 so
+// a parsed spec tree deep-equals a jsonic-parsed tree (which uses float64
+// for all numbers). Not needed for encoding/json's default behavior, but
+// kept here for clarity — jsonic also returns float64 for numbers.
+func normalizeSpec(v any) any {
+	switch x := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, vv := range x {
+			out[k] = normalizeSpec(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(x))
+		for i, vv := range x {
+			out[i] = normalizeSpec(vv)
+		}
+		return out
+	}
+	return v
+}
+
+func runSpec(t *testing.T, j *jsonic.Jsonic, name string) {
 	t.Helper()
-	_, err := j.Parse(src)
-	if err == nil {
-		t.Fatalf("Parse(%q) expected error, got nil", src)
+	cases := loadSpec(t, name)
+	for _, c := range cases {
+		if strings.HasPrefix(c.Expected, "!error ") {
+			pattern := c.Expected[len("!error "):]
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				t.Errorf("%q: bad regex %q: %v", c.Input, pattern, err)
+				continue
+			}
+			_, err = j.Parse(c.Input)
+			if err == nil {
+				t.Errorf("%q: expected error matching %q, got nil", c.Input, pattern)
+				continue
+			}
+			if !re.MatchString(err.Error()) {
+				t.Errorf("%q: error %q does not match %q",
+					c.Input, err.Error(), pattern)
+			}
+			continue
+		}
+
+		var want any
+		if err := json.Unmarshal([]byte(c.Expected), &want); err != nil {
+			t.Errorf("%q: bad expected JSON %q: %v", c.Input, c.Expected, err)
+			continue
+		}
+		want = normalizeSpec(want)
+
+		got, err := j.Parse(c.Input)
+		if err != nil {
+			t.Errorf("%q: parse error: %v", c.Input, err)
+			continue
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%q:\n  got:  %#v\n  want: %#v", c.Input, got, want)
+		}
 	}
 }
+
+// mustPanic asserts that fn panics. Used for duplicate-open-token tests.
+func mustPanic(t *testing.T, fn func()) {
+	t.Helper()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic, got none")
+		}
+	}()
+	fn()
+}
+
+// --- tests ---
 
 func TestHappy(t *testing.T) {
 	j := jsonic.Make()
@@ -44,93 +141,11 @@ func TestHappy(t *testing.T) {
 		Name: "upper",
 		Open: "@",
 		Action: func(rule *jsonic.Rule, ctx *jsonic.Context) {
-			s := fmt.Sprintf("%v", rule.Child.Node)
-			rule.Node = strings.ToUpper(s)
+			rule.Node = strings.ToUpper(fmt.Sprintf("%v", rule.Child.Node))
 		},
 	})
 
-	// Single value.
-	assert(t, "upper-a", mustParse(t, j, "@a"), "A")
-
-	// In lists (with brackets).
-	assert(t, "empty-list", mustParse(t, j, "[]"), []any{})
-	assert(t, "list-1", mustParse(t, j, "[1]"), []any{float64(1)})
-	assert(t, "list-1-2", mustParse(t, j, "[1, 2]"), []any{float64(1), float64(2)})
-	assert(t, "list-1-2-3", mustParse(t, j, "[1, 2, 3]"),
-		[]any{float64(1), float64(2), float64(3)})
-	assert(t, "list-@a", mustParse(t, j, "[@a]"), []any{"A"})
-	assert(t, "list-1-@a", mustParse(t, j, "[1, @a]"),
-		[]any{float64(1), "A"})
-	assert(t, "list-1-2-@a", mustParse(t, j, "[1, 2, @a]"),
-		[]any{float64(1), float64(2), "A"})
-	assert(t, "list-1-@a-2", mustParse(t, j, "[1, @a, 2]"),
-		[]any{float64(1), "A", float64(2)})
-	assert(t, "list-@a-2", mustParse(t, j, "[@a, 2]"),
-		[]any{"A", float64(2)})
-	assert(t, "list-@a-@b", mustParse(t, j, "[@a, @b]"),
-		[]any{"A", "B"})
-	assert(t, "list-@a-@b-@c", mustParse(t, j, "[@a, @b, @c]"),
-		[]any{"A", "B", "C"})
-
-	// Space-separated lists.
-	assert(t, "list-sp-1-2", mustParse(t, j, "[1 2]"),
-		[]any{float64(1), float64(2)})
-	assert(t, "list-sp-@a", mustParse(t, j, "[@a]"), []any{"A"})
-	assert(t, "list-sp-1-@a", mustParse(t, j, "[1 @a]"),
-		[]any{float64(1), "A"})
-	assert(t, "list-sp-@a-2", mustParse(t, j, "[@a 2]"),
-		[]any{"A", float64(2)})
-	assert(t, "list-sp-@a-@b", mustParse(t, j, "[@a @b]"),
-		[]any{"A", "B"})
-
-	// In maps (with braces).
-	assert(t, "empty-map", mustParse(t, j, "{}"), map[string]any{})
-	assert(t, "map-x1", mustParse(t, j, "{x:1}"),
-		map[string]any{"x": float64(1)})
-	assert(t, "map-x1-y2", mustParse(t, j, "{x:1, y:2}"),
-		map[string]any{"x": float64(1), "y": float64(2)})
-	assert(t, "map-x-@a", mustParse(t, j, "{x:@a}"),
-		map[string]any{"x": "A"})
-	assert(t, "map-y1-x@a", mustParse(t, j, "{y:1, x:@a}"),
-		map[string]any{"y": float64(1), "x": "A"})
-	assert(t, "map-y1-x@a-z2", mustParse(t, j, "{y:1, x:@a, z:2}"),
-		map[string]any{"y": float64(1), "x": "A", "z": float64(2)})
-	assert(t, "map-x@a-y@b", mustParse(t, j, "{x:@a, y:@b}"),
-		map[string]any{"x": "A", "y": "B"})
-
-	// Space-separated maps.
-	assert(t, "map-sp-x@a", mustParse(t, j, "{x:@a}"),
-		map[string]any{"x": "A"})
-	assert(t, "map-sp-y1-x@a", mustParse(t, j, "{y:1 x:@a}"),
-		map[string]any{"y": float64(1), "x": "A"})
-	assert(t, "map-sp-x@a-y@b", mustParse(t, j, "{x:@a y:@b}"),
-		map[string]any{"x": "A", "y": "B"})
-
-	// Implicit lists (comma-separated, no brackets).
-	assert(t, "imp-1-@a", mustParse(t, j, "1, @a"),
-		[]any{float64(1), "A"})
-	assert(t, "imp-@a-1", mustParse(t, j, "@a, 1"),
-		[]any{"A", float64(1)})
-	assert(t, "imp-1-@a-2", mustParse(t, j, "1, @a, 2"),
-		[]any{float64(1), "A", float64(2)})
-
-	// Implicit lists (space-separated, no brackets).
-	assert(t, "imp-sp-1-@a", mustParse(t, j, "1 @a"),
-		[]any{float64(1), "A"})
-	assert(t, "imp-sp-@a-1", mustParse(t, j, "@a 1"),
-		[]any{"A", float64(1)})
-	assert(t, "imp-sp-1-@a-2", mustParse(t, j, "1 @a 2"),
-		[]any{float64(1), "A", float64(2)})
-
-	// Multiple directives in implicit lists.
-	assert(t, "imp-1-@a-@b", mustParse(t, j, "1, @a, @b"),
-		[]any{float64(1), "A", "B"})
-	assert(t, "imp-sp-1-@a-@b", mustParse(t, j, "1 @a @b"),
-		[]any{float64(1), "A", "B"})
-	assert(t, "imp-@a-@b-1", mustParse(t, j, "@a, @b, 1"),
-		[]any{"A", "B", float64(1)})
-	assert(t, "imp-sp-@a-@b-1", mustParse(t, j, "@a @b 1"),
-		[]any{"A", "B", float64(1)})
+	runSpec(t, j, "happy.tsv")
 }
 
 func TestClose(t *testing.T) {
@@ -144,31 +159,9 @@ func TestClose(t *testing.T) {
 		},
 	})
 
-	assert(t, "foo-t", mustParse(t, j, "foo<t>"), "FOO")
-	assert(t, "foo-empty", mustParse(t, j, "foo<>"), "FOO")
+	runSpec(t, j, "close-foo.tsv")
 
-	assert(t, "map-a1", mustParse(t, j, `{"a":1}`),
-		map[string]any{"a": float64(1)})
-	assert(t, "map-a-foo", mustParse(t, j, `{"a":foo< a >}`),
-		map[string]any{"a": "FOO"})
-	assert(t, "map-a-foo-obj", mustParse(t, j, `{"a":foo<{x:1}>}`),
-		map[string]any{"a": "FOO"})
-	assert(t, "map-a-foo-nested", mustParse(t, j, `{"a":foo<foo<a>>}`),
-		map[string]any{"a": "FOO"})
-
-	assert(t, "map-a1-b-foo", mustParse(t, j, `{"a":1,b:foo<b>}`),
-		map[string]any{"a": float64(1), "b": "FOO"})
-	assert(t, "map-a1-b-foo-list", mustParse(t, j, `{"a":1,b:foo<[2]>}`),
-		map[string]any{"a": float64(1), "b": "FOO"})
-
-	assert(t, "list-1-foo", mustParse(t, j, `{"a":[1,foo<b>]}`),
-		map[string]any{"a": []any{float64(1), "FOO"}})
-
-	// Close without open should error.
-	mustError(t, j, ">")
-	mustError(t, j, "a:>")
-
-	// Second directive sharing the same close token.
+	// Register a second directive sharing the same close token.
 	Apply(j, DirectiveOptions{
 		Name:  "bar",
 		Open:  "bar<",
@@ -178,28 +171,15 @@ func TestClose(t *testing.T) {
 		},
 	})
 
-	assert(t, "bar-a", mustParse(t, j, `{"a":bar< a >}`),
-		map[string]any{"a": "BAR"})
-	assert(t, "bar-obj", mustParse(t, j, `{"a":bar<{x:1}>}`),
-		map[string]any{"a": "BAR"})
-
-	assert(t, "foo-after-bar", mustParse(t, j, `{"a":foo< a >}`),
-		map[string]any{"a": "FOO"})
-
-	assert(t, "foo-and-bar", mustParse(t, j, `{"a":foo< a >, b:bar<>}`),
-		map[string]any{"a": "FOO", "b": "BAR"})
+	runSpec(t, j, "close-foo-bar.tsv")
 
 	// Duplicate open token should panic.
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic for duplicate open token")
-		}
-	}()
-	Apply(j, DirectiveOptions{
-		Name:   "baz",
-		Open:   "bar<",
-		Action: func(rule *jsonic.Rule, ctx *jsonic.Context) {},
+	mustPanic(t, func() {
+		Apply(j, DirectiveOptions{
+			Name:   "baz",
+			Open:   "bar<",
+			Action: func(rule *jsonic.Rule, ctx *jsonic.Context) {},
+		})
 	})
 }
 
@@ -210,59 +190,59 @@ func TestAdder(t *testing.T) {
 		Open:  "add<",
 		Close: ">",
 		Action: func(rule *jsonic.Rule, ctx *jsonic.Context) {
-			out := float64(0)
-			if arr, ok := rule.Child.Node.([]any); ok {
+			if arr, ok := rule.Child.Node.([]any); ok && len(arr) > 0 {
+				// If any element is a string, concatenate; otherwise sum.
+				allNum := true
 				for _, v := range arr {
-					if n, ok := v.(float64); ok {
-						out += n
-					} else if s, ok := v.(string); ok {
-						// String concatenation: treat result as string.
-						result := ""
-						for _, sv := range arr {
-							result += fmt.Sprintf("%v", sv)
-						}
-						_ = s
-						rule.Node = result
-						return
+					if _, ok := v.(float64); !ok {
+						allNum = false
+						break
 					}
 				}
+				if allNum {
+					var out float64
+					for _, v := range arr {
+						out += v.(float64)
+					}
+					rule.Node = out
+					return
+				}
+				var out string
+				for _, v := range arr {
+					out += fmt.Sprintf("%v", v)
+				}
+				rule.Node = out
+				return
 			}
-			rule.Node = out
+			rule.Node = float64(0)
 		},
 	})
 
-	assert(t, "add-1-2", mustParse(t, j, "add<1,2>"), float64(3))
-	assert(t, "map-add", mustParse(t, j, "a:add<1,2>"),
-		map[string]any{"a": float64(3)})
-	assert(t, "list-add-str", mustParse(t, j, "[add<a,b>]"), []any{"ab"})
+	runSpec(t, j, "adder.tsv")
 
-	// Second directive: multiplier.
 	Apply(j, DirectiveOptions{
 		Name:  "multiplier",
 		Open:  "mul<",
 		Close: ">",
 		Action: func(rule *jsonic.Rule, ctx *jsonic.Context) {
-			out := float64(0)
 			if arr, ok := rule.Child.Node.([]any); ok && len(arr) > 0 {
-				out = 1
+				out := 1.0
 				for _, v := range arr {
 					if n, ok := v.(float64); ok {
 						out *= n
 					}
 				}
+				rule.Node = out
+				return
 			}
-			rule.Node = out
+			rule.Node = float64(0)
 		},
 	})
 
-	assert(t, "mul-2-3", mustParse(t, j, "mul<2,3>"), float64(6))
-	assert(t, "map-mul", mustParse(t, j, "a:mul<2,3>"),
-		map[string]any{"a": float64(6)})
+	runSpec(t, j, "multiplier.tsv")
 
-	// Original adder still works.
-	assert(t, "add-after-mul", mustParse(t, j, "add<1,2>"), float64(3))
-	assert(t, "map-add-after-mul", mustParse(t, j, "a:add<1,2>"),
-		map[string]any{"a": float64(3)})
+	// Adder still works after second registration.
+	runSpec(t, j, "adder.tsv")
 }
 
 func TestEdges(t *testing.T) {
@@ -274,13 +254,111 @@ func TestEdges(t *testing.T) {
 		Rules:  &RulesOption{}, // Empty rules: no existing rules modified.
 	})
 
-	// @ is registered as a fixed token but no rule detects it → error.
-	mustError(t, j, "a:@x")
+	_, err := j.Parse("a:@x")
+	if err == nil {
+		t.Fatal("expected error for a:@x with empty rules")
+	}
 }
 
-func TestCustom(t *testing.T) {
-	// Test the Custom callback: create a directive that uses custom
-	// rule modifications to handle @foo as a map key-value shorthand.
+func TestInject(t *testing.T) {
+	src := map[string]any{
+		"a":  "A",
+		"b":  map[string]any{"b": float64(1)},
+		"bb": map[string]any{"bb": float64(1)},
+		"c":  []any{float64(2), float64(3)},
+	}
+
+	j := jsonic.Make()
+	Apply(j, DirectiveOptions{
+		Name: "inject",
+		Open: "@",
+		Rules: &RulesOption{
+			Open: map[string]*RuleMod{"val": {}, "pair": {}},
+		},
+		Action: func(rule *jsonic.Rule, ctx *jsonic.Context) {
+			srcname := fmt.Sprintf("%v", rule.Child.Node)
+			val := src[srcname]
+			if rule.Parent != nil && rule.Parent.Name == "pair" {
+				if m, ok := rule.Parent.Node.(map[string]any); ok {
+					if sm, ok := val.(map[string]any); ok {
+						for k, v := range sm {
+							m[k] = v
+						}
+						return
+					}
+				}
+			}
+			rule.Node = val
+		},
+		Custom: func(j *jsonic.Jsonic, cfg DirectiveConfig) {
+			OPEN := cfg.OPEN
+			name := cfg.Name
+			j.Rule("val", func(rs *jsonic.RuleSpec) {
+				rs.PrependOpen(&jsonic.AltSpec{
+					S: [][]jsonic.Tin{{OPEN}},
+					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
+						return r.D == 0
+					},
+					P: "map",
+					B: 1,
+					N: map[string]int{name + "_top": 1},
+				})
+			})
+			j.Rule("map", func(rs *jsonic.RuleSpec) {
+				rs.PrependOpen(&jsonic.AltSpec{
+					S: [][]jsonic.Tin{{OPEN}},
+					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
+						return r.D == 1 && r.N[name+"_top"] == 1
+					},
+					P: "pair",
+					B: 1,
+				})
+			})
+		},
+	})
+
+	runSpec(t, j, "inject.tsv")
+}
+
+func TestAnnotate(t *testing.T) {
+	j := jsonic.Make()
+	Apply(j, DirectiveOptions{
+		Name:  "annotate",
+		Open:  "@",
+		Rules: &RulesOption{Open: map[string]*RuleMod{"val": {}}},
+		Action: func(rule *jsonic.Rule, ctx *jsonic.Context) {
+			rule.Parent.U["note"] = "<" + fmt.Sprintf("%v", rule.Child.Node) + ">"
+		},
+		Custom: func(j *jsonic.Jsonic, cfg DirectiveConfig) {
+			name := cfg.Name
+			j.Rule(name, func(rs *jsonic.RuleSpec) {
+				rs.PrependClose(&jsonic.AltSpec{
+					R: "val",
+					G: "replace",
+				})
+				rs.AddAC(func(rule *jsonic.Rule, ctx *jsonic.Context) {
+					if rule.Parent != nil && rule.Parent != jsonic.NoRule &&
+						rule.Next != nil && rule.Next != jsonic.NoRule {
+						rule.Parent.Child = rule.Next
+					}
+				})
+			})
+			j.Rule("val", func(rs *jsonic.RuleSpec) {
+				rs.AddBC(func(r *jsonic.Rule, ctx *jsonic.Context) {
+					if note, ok := r.U["note"]; ok && note != nil {
+						if m, ok := r.Node.(map[string]any); ok {
+							m["@"] = note
+						}
+					}
+				})
+			})
+		},
+	})
+
+	runSpec(t, j, "annotate.tsv")
+}
+
+func TestSubobj(t *testing.T) {
 	j := jsonic.Make()
 	Apply(j, DirectiveOptions{
 		Name: "subobj",
@@ -300,7 +378,7 @@ func TestCustom(t *testing.T) {
 			val := strings.ToUpper(key)
 			res := map[string]any{key: val}
 
-			// Merge into grandparent node.
+			// Merge into grandparent node if it's a map.
 			if rule.Parent != nil && rule.Parent != jsonic.NoRule &&
 				rule.Parent.Parent != nil && rule.Parent.Parent != jsonic.NoRule {
 				if m, ok := rule.Parent.Parent.Node.(map[string]any); ok {
@@ -325,7 +403,7 @@ func TestCustom(t *testing.T) {
 							return r.N["pk"] > 0
 						},
 						B: 1,
-						G: name + "_undive",
+						G: name + "-undive",
 					},
 					&jsonic.AltSpec{
 						S: [][]jsonic.Tin{{OPEN}},
@@ -335,7 +413,7 @@ func TestCustom(t *testing.T) {
 						P: "map",
 						B: 1,
 						N: map[string]int{name + "_top": 1},
-						G: name + "_top",
+						G: name + "-top",
 					},
 				)
 			})
@@ -348,7 +426,7 @@ func TestCustom(t *testing.T) {
 					},
 					P: "pair",
 					B: 1,
-					G: name + "_top",
+					G: name + "-top",
 				})
 				rs.PrependClose(&jsonic.AltSpec{
 					S: [][]jsonic.Tin{{OPEN}},
@@ -356,7 +434,7 @@ func TestCustom(t *testing.T) {
 						return r.N["pk"] > 0
 					},
 					B: 1,
-					G: name + "_undive",
+					G: name + "-undive",
 				})
 			})
 
@@ -367,32 +445,11 @@ func TestCustom(t *testing.T) {
 						return r.N["pk"] > 0
 					},
 					B: 1,
-					G: name + "_undive",
+					G: name + "-undive",
 				})
 			})
 		},
 	})
 
-	assert(t, "sub-@a", mustParse(t, j, "@a"),
-		map[string]any{"a": "A"})
-	assert(t, "sub-{@a}", mustParse(t, j, "{@a}"),
-		map[string]any{"a": "A"})
-	assert(t, "sub-{@a @b}", mustParse(t, j, "{@a @b}"),
-		map[string]any{"a": "A", "b": "B"})
-	assert(t, "sub-{x:1 @a @b}", mustParse(t, j, "{x:1 @a @b}"),
-		map[string]any{"x": float64(1), "a": "A", "b": "B"})
-	assert(t, "sub-{@a q:1}", mustParse(t, j, "{@a q:1}"),
-		map[string]any{"a": "A", "q": float64(1)})
-
-	assert(t, "sub-@a-q:1", mustParse(t, j, "@a q:1"),
-		map[string]any{"a": "A", "q": float64(1)})
-	assert(t, "sub-q:1-@a", mustParse(t, j, "q:1 @a"),
-		map[string]any{"q": float64(1), "a": "A"})
-	assert(t, "sub-q:1-@a-w:2", mustParse(t, j, "q:1 @a w:2"),
-		map[string]any{"q": float64(1), "a": "A", "w": float64(2)})
-
-	assert(t, "sub-@a-@b", mustParse(t, j, "@a @b"),
-		map[string]any{"a": "A", "b": "B"})
-	assert(t, "sub-q:1-@a-@b", mustParse(t, j, "q:1 @a @b"),
-		map[string]any{"q": float64(1), "a": "A", "b": "B"})
+	runSpec(t, j, "subobj.tsv")
 }
