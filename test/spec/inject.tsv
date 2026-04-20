@@ -1,0 +1,29 @@
+# inject.tsv — tests the "inject" directive (open="@", no close)
+# Action: @<key> looks up SRC[key] and injects it.
+# SRC = {a:"A", b:{b:1}, bb:{bb:1}, c:[2,3]}
+# Format: <input>\t<expected-json>    or    <input>\t!error <regex>
+
+# --- unknown key → null ---
+a:@z	{"a": null}
+
+# --- scalar injection ---
+a:@a	{"a": "A"}
+a:b:@a	{"a": {"b": "A"}}
+
+# --- map injection ---
+b:@b	{"b": {"b": 1}}
+b:a:@b	{"b": {"a": {"b": 1}}}
+
+# --- list injection ---
+c:@c	{"c": [2, 3]}
+c:b:@c	{"c": {"b": [2, 3]}}
+
+# --- pair-level injection merges into parent map ---
+a:1 @b	{"a": 1, "b": 1}
+a:1 @b c:2	{"a": 1, "b": 1, "c": 2}
+a:@a @b c:@c	{"a": "A", "b": 1, "c": [2, 3]}
+
+# --- top-level: assumed to be a map ---
+@b	{"b": 1}
+@b x:1	{"b": 1, "x": 1}
+@b x:1 @bb	{"b": 1, "x": 1, "bb": 1}

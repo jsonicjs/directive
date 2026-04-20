@@ -1,29 +1,66 @@
-# @jsonic/directive (JSONIC syntax plugin)
+# @jsonic/directive — directive syntax for Jsonic
 
-This plugin allows the [Jsonic](https://jsonic.senecajs.org) JSON
-parser to support directive syntax.
-
+Adds directive syntax to the [Jsonic](https://jsonic.senecajs.org) JSON
+parser. A directive is a token sequence (e.g. `@name`, `add<1,2>`) that
+triggers custom parsing behaviour. TypeScript and Go ports share the
+same API shape and test specs.
 
 [![npm version](https://img.shields.io/npm/v/@jsonic/directive.svg)](https://npmjs.com/package/@jsonic/directive)
 [![build](https://github.com/jsonicjs/directive/actions/workflows/build.yml/badge.svg)](https://github.com/jsonicjs/directive/actions/workflows/build.yml)
-[![Coverage Status](https://coveralls.io/repos/github/jsonicjs/directive/badge.svg?branch=main)](https://coveralls.io/github/jsonicjs/directive?branch=main)
-[![Known Vulnerabilities](https://snyk.io/test/github/jsonicjs/directive/badge.svg)](https://snyk.io/test/github/jsonicjs/directive)
-[![DeepScan grade](https://deepscan.io/api/teams/5016/projects/22466/branches/663906/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=5016&pid=22466&bid=663906)
-[![Maintainability](https://api.codeclimate.com/v1/badges/10e9bede600896c77ce8/maintainability)](https://codeclimate.com/github/jsonicjs/directive/maintainability)
-
-| ![Voxgig](https://www.voxgig.com/res/img/vgt01r.png) | This open source module is sponsored and supported by [Voxgig](https://www.voxgig.com). |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
 
 
-<!--START:options-->
-## Options
-* _rules_
-  * _close_: `string` (default: list,elem,map,pair) - close
-  * _open_: `string` (default: val) - open
-<!--END:options-->
+## Documentation
+
+This project's documentation follows the [Diátaxis](https://diataxis.fr)
+framework. Each section has one job — pick the one that matches what
+you're trying to do.
+
+| If you want to…                                | Read                                     |
+| ---------------------------------------------- | ---------------------------------------- |
+| Build your first directive step-by-step        | [Tutorial](docs/tutorial.md)             |
+| Solve a specific problem                       | [How-to guides](docs/how-to.md)          |
+| Look up an option, type, or default            | [Reference](docs/reference.md)           |
+| Understand how the plugin works internally     | [Explanation](docs/explanation.md)       |
 
 
+## Quickstart
+
+### TypeScript
+
+```ts
+import { Jsonic } from 'jsonic'
+import { Directive } from '@jsonic/directive'
+
+const j = Jsonic.make().use(Directive, {
+  name: 'upper',
+  open: '@',
+  action: (rule) => (rule.node = String(rule.child.node).toUpperCase()),
+})
+
+j('[@a, @b, 1]') // → ['A', 'B', 1]
+```
+
+### Go
+
+```go
+import (
+    jsonic "github.com/jsonicjs/jsonic/go"
+    directive "github.com/jsonicjs/directive/go"
+)
+
+j := jsonic.Make()
+directive.Apply(j, directive.DirectiveOptions{
+    Name: "upper",
+    Open: "@",
+    Action: func(r *jsonic.Rule, _ *jsonic.Context) {
+        r.Node = strings.ToUpper(fmt.Sprintf("%v", r.Child.Node))
+    },
+})
+
+j.Parse("[@a, @b, 1]") // → []any{"A", "B", float64(1)}
+```
 
 
+## License
 
-
+MIT — see [LICENSE](LICENSE).

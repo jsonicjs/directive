@@ -1,0 +1,31 @@
+# close-foo.tsv — tests the "foo" directive (open="foo<", close=">")
+# Action: foo<...> → "FOO"
+# Format: <input>\t<expected-json>    or    <input>\t!error <regex>
+
+# --- basic ---
+foo<t>	"FOO"
+foo<>	"FOO"
+
+# --- in maps ---
+{"a":1}	{"a": 1}
+{"a":foo< a >}	{"a": "FOO"}
+{"a":foo<{x:1}>}	{"a": "FOO"}
+{"a":foo<foo<a>>}	{"a": "FOO"}
+{"a":1,b:foo<b>}	{"a": 1, "b": "FOO"}
+{"a":1,b:foo<[2]>}	{"a": 1, "b": "FOO"}
+
+# --- in lists ---
+{"a":[1,foo<b>]}	{"a": [1, "FOO"]}
+[foo<1>, foo<2>]	["FOO", "FOO"]
+
+# --- nested directives ---
+foo<foo<foo<a>>>	"FOO"
+foo<foo<foo<foo<a>>>>	"FOO"
+
+# --- complex body ---
+foo<{a:[1,2],b:{c:3}}>	"FOO"
+foo<[1,[2,[3]]]>	"FOO"
+
+# --- errors ---
+>	!error unexpected
+a:>	!error unexpected

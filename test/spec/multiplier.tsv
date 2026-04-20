@@ -1,0 +1,10 @@
+# multiplier.tsv — tests the "multiplier" directive (open="mul<", close=">")
+# Action: multiplies a list of numbers; non-numeric handling is language-specific
+# so only numeric cases are shared here.
+# Format: <input>\t<expected-json>    or    <input>\t!error <regex>
+
+mul<2,3>	6
+mul<2,3,4>	24
+a:mul<2,3>	{"a": 6}
+[mul<2,3>]	[6]
+mul<5,2>	10
