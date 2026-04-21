@@ -348,7 +348,7 @@ func Directive(j *jsonic.Jsonic, pluginOpts map[string]any) error {
 	// Clear any pre-existing alts/state actions on the directive rule so
 	// that j.Grammar() below installs a clean set via wireStateActions +
 	// prepend onto empty slices.
-	j.Rule(name, func(rs *jsonic.RuleSpec) {
+	j.Rule(name, func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 		rs.Clear()
 	})
 

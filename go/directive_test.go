@@ -293,7 +293,7 @@ func TestInject(t *testing.T) {
 		Custom: func(j *jsonic.Jsonic, cfg DirectiveConfig) {
 			OPEN := cfg.OPEN
 			name := cfg.Name
-			j.Rule("val", func(rs *jsonic.RuleSpec) {
+			j.Rule("val", func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 				rs.PrependOpen(&jsonic.AltSpec{
 					S: [][]jsonic.Tin{{OPEN}},
 					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
@@ -304,7 +304,7 @@ func TestInject(t *testing.T) {
 					N: map[string]int{name + "_top": 1},
 				})
 			})
-			j.Rule("map", func(rs *jsonic.RuleSpec) {
+			j.Rule("map", func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 				rs.PrependOpen(&jsonic.AltSpec{
 					S: [][]jsonic.Tin{{OPEN}},
 					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
@@ -331,7 +331,7 @@ func TestAnnotate(t *testing.T) {
 		},
 		Custom: func(j *jsonic.Jsonic, cfg DirectiveConfig) {
 			name := cfg.Name
-			j.Rule(name, func(rs *jsonic.RuleSpec) {
+			j.Rule(name, func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 				rs.PrependClose(&jsonic.AltSpec{
 					R: "val",
 					G: "replace",
@@ -343,7 +343,7 @@ func TestAnnotate(t *testing.T) {
 					}
 				})
 			})
-			j.Rule("val", func(rs *jsonic.RuleSpec) {
+			j.Rule("val", func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 				rs.AddBC(func(r *jsonic.Rule, ctx *jsonic.Context) {
 					if note, ok := r.U["note"]; ok && note != nil {
 						if m, ok := r.Node.(map[string]any); ok {
@@ -395,7 +395,7 @@ func TestSubobj(t *testing.T) {
 			name := cfg.Name
 
 			// Handle @foo at top level: assume a map.
-			j.Rule("val", func(rs *jsonic.RuleSpec) {
+			j.Rule("val", func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 				rs.PrependOpen(
 					&jsonic.AltSpec{
 						S: [][]jsonic.Tin{{OPEN}},
@@ -418,7 +418,7 @@ func TestSubobj(t *testing.T) {
 				)
 			})
 
-			j.Rule("map", func(rs *jsonic.RuleSpec) {
+			j.Rule("map", func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 				rs.PrependOpen(&jsonic.AltSpec{
 					S: [][]jsonic.Tin{{OPEN}},
 					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
@@ -438,7 +438,7 @@ func TestSubobj(t *testing.T) {
 				})
 			})
 
-			j.Rule("pair", func(rs *jsonic.RuleSpec) {
+			j.Rule("pair", func(rs *jsonic.RuleSpec, _ *jsonic.Parser) {
 				rs.PrependClose(&jsonic.AltSpec{
 					S: [][]jsonic.Tin{{OPEN}},
 					C: func(r *jsonic.Rule, ctx *jsonic.Context) bool {
