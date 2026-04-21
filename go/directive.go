@@ -8,7 +8,7 @@ import (
 	jsonic "github.com/jsonicjs/jsonic/go"
 )
 
-const Version = "0.1.2"
+const Version = "0.1.3"
 
 // Action is called when a directive is processed.
 // It receives the directive rule and parse context. The rule's Child.Node
