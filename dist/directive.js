@@ -94,7 +94,15 @@ appear without the start characters "{open}" appearing first:
     }));
     // Build a declarative grammar spec covering every rule modification
     // plus the directive rule's own alts.
-    const grammarSpec = { rule: {} };
+    // `rule` has NO PROTOTYPE, because `ruleFor` indexes it by rule name and
+    // `node[rn] || {}` cannot tell an absent rule from an inherited one: on an
+    // ordinary object `rule['__proto__']` and `rule['constructor']` both answer
+    // truthy, so the `||` would not fire and the alts would be attached to
+    // `Object.prototype` instead of to a rule. Rule names come from a plugin's
+    // own configuration rather than from parsed text, so this is a latent trap
+    // rather than a live one — but a grammar is free to name a rule anything,
+    // and the cost of not having a prototype here is nil.
+    const grammarSpec = { rule: Object.create(null) };
     const ruleFor = (rn) => (grammarSpec.rule[rn] = grammarSpec.rule[rn] || {});
     Object.entries(rules.open).forEach((entry) => {
         const [rulename, rulespec] = entry;
